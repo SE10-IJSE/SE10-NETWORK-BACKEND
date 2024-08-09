@@ -9,21 +9,25 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 @Data
-@Table(name = "notification")
-public class Notification {
+public class Student {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long notificationId;
+    private Long studentId;
 
-    private String content;
+    private String name;
 
-    private String type;
+    private String email;
+
+    private String password;
+
+    private LocalDate dob;
 
     @Column (columnDefinition = "boolean default true")
     private boolean status;
@@ -36,13 +40,16 @@ public class Notification {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @ManyToOne
-    @JoinColumn(name = "admin_id")
-    private Admin admin;
+    @OneToMany(mappedBy = "student")
+    private List<Post> posts;
 
-    public Notification(String content, String type, Admin admin) {
-        this.content = content;
-        this.type = type;
-        this.admin = admin;
+    @OneToMany(mappedBy = "student")
+    private List<Like> likes;
+
+    public Student(String name, String email, String password, LocalDate dob) {
+        this.name = name;
+        this.email = email;
+        this.password = password;
+        this.dob = dob;
     }
 }

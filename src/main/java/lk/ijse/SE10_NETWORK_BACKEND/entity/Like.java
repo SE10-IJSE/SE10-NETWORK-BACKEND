@@ -6,27 +6,20 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+
 @Entity
+@Table(name = "like_table")
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-@Table(name = "notification")
-public class Notification {
+public class Like {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long notificationId;
-
-    private String content;
-
-    private String type;
-
-    @Column (columnDefinition = "boolean default true")
-    private boolean status;
+    private Long likeId;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -36,13 +29,19 @@ public class Notification {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @ManyToOne
-    @JoinColumn(name = "admin_id")
-    private Admin admin;
+    @Column (columnDefinition = "boolean default true")
+    private boolean status;
 
-    public Notification(String content, String type, Admin admin) {
-        this.content = content;
-        this.type = type;
-        this.admin = admin;
+    @ManyToOne
+    @JoinColumn(name = "post_id")
+    private Post post;
+
+    @ManyToOne
+    @JoinColumn(name = "student_id")
+    private Student student;
+
+    public Like(Post post, Student student) {
+        this.post = post;
+        this.student = student;
     }
 }

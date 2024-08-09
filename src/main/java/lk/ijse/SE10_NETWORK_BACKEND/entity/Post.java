@@ -7,25 +7,24 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-@Table(name = "notification")
-public class Notification {
+@Table(name = "post")
+public class Post {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long notificationId;
+    private Long postId;
 
     private String content;
 
-    private String type;
-
-    @Column (columnDefinition = "boolean default true")
     private boolean status;
 
     @CreationTimestamp
@@ -37,12 +36,19 @@ public class Notification {
     private LocalDateTime updatedAt;
 
     @ManyToOne
-    @JoinColumn(name = "admin_id")
-    private Admin admin;
+    @JoinColumn(name = "student_id")
+    private Student student;
 
-    public Notification(String content, String type, Admin admin) {
+    @ManyToOne
+    @JoinColumn(name = "approved_admin_id")
+    private Admin approvedAdmin;
+
+    @OneToMany(mappedBy = "post")
+    private List<Like> likes;
+
+    public Post(String content, Student student) {
         this.content = content;
-        this.type = type;
-        this.admin = admin;
+        this.student = student;
     }
 }
+
