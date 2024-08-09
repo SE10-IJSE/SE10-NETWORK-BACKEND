@@ -1,5 +1,5 @@
 package lk.ijse.SE10_NETWORK_BACKEND.dto;
 
-public class LikeDto {
+public class LikeDTO {
 }
 
