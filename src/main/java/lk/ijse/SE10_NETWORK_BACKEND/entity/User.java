@@ -6,26 +6,31 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 @Data
-@Table(name = "admin")
-public class Admin {
+public class User {
+
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long adminId;
+    private Long userId;
 
     private String name;
 
     private String email;
 
     private String password;
+
+    private LocalDate dob;
+
+    @Column (columnDefinition = "boolean default true")
+    private boolean status;
+
+    private String role="user";
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -35,15 +40,18 @@ public class Admin {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @OneToMany(mappedBy = "approvedAdmin")
-    private List<Post> approvedPosts;
+    @OneToMany(mappedBy = "user")
+    private List<Post> posts;
 
-    @OneToMany(mappedBy = "admin")
-    private List<Notification> notifications;
+    @OneToMany(mappedBy = "user")
+    private List<Inspire> inspires;
 
-    public Admin(String name, String email, String password) {
+
+    public User(Long userId, String name, String email, String password, LocalDate dob) {
+        this.userId = userId;
         this.name = name;
         this.email = email;
         this.password = password;
+        this.dob = dob;
     }
 }
