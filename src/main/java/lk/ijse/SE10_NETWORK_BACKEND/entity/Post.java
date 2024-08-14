@@ -6,9 +6,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-
-
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -25,6 +22,7 @@ public class Post {
 
     private String content;
 
+    @Column(columnDefinition = "boolean default true")
     private boolean status;
 
     @CreationTimestamp
@@ -36,19 +34,19 @@ public class Post {
     private LocalDateTime updatedAt;
 
     @ManyToOne
-    @JoinColumn(name = "student_id")
-    private Student student;
+    @JoinColumn(name = "user_id")
+    private User user;
 
     @ManyToOne
-    @JoinColumn(name = "approved_admin_id")
-    private Admin approvedAdmin;
+    @JoinColumn(name = "approved_by")
+    private User approvedBy;
 
     @OneToMany(mappedBy = "post")
-    private List<Like> likes;
+    private List<Inspire> inspires;
 
-    public Post(String content, Student student) {
+    public Post(String content, User user) {
         this.content = content;
-        this.student = student;
+        this.user = user;
     }
 }
 

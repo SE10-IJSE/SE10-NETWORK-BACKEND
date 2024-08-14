@@ -1,9 +1,9 @@
 package lk.ijse.SE10_NETWORK_BACKEND.repository;
 
-import lk.ijse.SE10_NETWORK_BACKEND.entity.Like;
+import lk.ijse.SE10_NETWORK_BACKEND.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface LikeRepository extends JpaRepository<Like,Long> {
+public interface UserRepository extends JpaRepository<User, Long> {
 }
