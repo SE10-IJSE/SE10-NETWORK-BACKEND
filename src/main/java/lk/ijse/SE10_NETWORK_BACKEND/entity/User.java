@@ -1,6 +1,7 @@
 package lk.ijse.SE10_NETWORK_BACKEND.entity;
 
 import jakarta.persistence.*;
+import lk.ijse.SE10_NETWORK_BACKEND.dto.UserDTO;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -54,4 +55,9 @@ public class User {
         this.password = password;
         this.dob = dob;
     }
+
+    public UserDTO toDto() {
+        return new UserDTO(userId, name, email, password, dob);
+    }
+
 }
