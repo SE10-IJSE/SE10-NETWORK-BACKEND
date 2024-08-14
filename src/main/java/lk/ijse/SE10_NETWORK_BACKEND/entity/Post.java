@@ -1,11 +1,14 @@
 package lk.ijse.SE10_NETWORK_BACKEND.entity;
 
+
 import jakarta.persistence.*;
+import lk.ijse.SE10_NETWORK_BACKEND.dto.PostDTO;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -47,6 +50,17 @@ public class Post {
     public Post(String content, User user) {
         this.content = content;
         this.user = user;
+    }
+
+    public PostDTO toDto() {
+        return new PostDTO(
+                postId,
+                content,
+                createdAt,
+                updatedAt,
+                user.getUserId(),
+                approvedBy == null ? null : approvedBy.getUserId()
+        );
     }
 }
 
