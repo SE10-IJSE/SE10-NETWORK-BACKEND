@@ -30,10 +30,6 @@ public class Notification {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
@@ -43,4 +39,5 @@ public class Notification {
         this.type = type;
         this.user = user;
     }
+
 }
