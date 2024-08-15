@@ -1,10 +1,12 @@
 package lk.ijse.SE10_NETWORK_BACKEND.entity;
 
 import jakarta.persistence.*;
+import lk.ijse.SE10_NETWORK_BACKEND.dto.InspireDTO;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -32,5 +34,13 @@ public class Inspire {
     public Inspire(Post post, User user) {
         this.post = post;
         this.user = user;
+    }
+
+    public InspireDTO toDTO() {
+        return new InspireDTO(
+                inspireId,
+                post.getPostId(),
+                user.getUserId()
+        );
     }
 }
