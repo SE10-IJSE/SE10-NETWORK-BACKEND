@@ -6,24 +6,39 @@ import lk.ijse.SE10_NETWORK_BACKEND.dto.UserDTO;
 import lk.ijse.SE10_NETWORK_BACKEND.entity.User;
 import lk.ijse.SE10_NETWORK_BACKEND.repository.UserRepository;
 import lk.ijse.SE10_NETWORK_BACKEND.service.UserService;
+import lk.ijse.SE10_NETWORK_BACKEND.util.VarList;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
-public class UserServiceIMPL implements UserService {
+public class UserServiceIMPL implements UserService , UserDetailsService {
     @Autowired
     private UserRepository userRepository;
 
     @Override
-    public UserDTO saveUser(UserDTO userDTO) {
-        User save = userRepository.save(userDTO.toEntity());
-
-        if (save != null) {
-            return save.toDto();
+    public int saveUser(UserDTO userDTO) {
+        if (userRepository.existsByEmail(userDTO.getEmail())) {
+            return VarList.Not_Acceptable;
+        } else {
+            BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+            userDTO.setPassword(passwordEncoder.encode(userDTO.getPassword()));
+            userDTO.setRole("USER");
         }
-        return null;
+        userRepository.save(userDTO.toEntity());
+        return VarList.Created;
+        //User save = userRepository.save(userDTO.toEntity());
+
     }
 
     @Override
@@ -84,4 +99,28 @@ public class UserServiceIMPL implements UserService {
         return null;
     }
 
+
+    @Override
+    public UserDTO loadUserDetailsByEmail(String email) {
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user != null) {
+            return user.toDto();
+        }
+        return null;
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null) {
+            throw new UsernameNotFoundException("User Not Found");
+        }
+        return new org.springframework.security.core.userdetails.User(user.getEmail(), user.getPassword(), getAuthorities(user));
+    }
+
+    public Set<SimpleGrantedAuthority> getAuthorities(User user) {
+        Set<SimpleGrantedAuthority> authorities = new HashSet<>();
+        authorities.add(new SimpleGrantedAuthority(user.getRole()));
+        return authorities;
+    }
 }
