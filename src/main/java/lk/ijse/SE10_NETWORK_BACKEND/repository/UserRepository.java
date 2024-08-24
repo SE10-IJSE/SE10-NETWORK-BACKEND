@@ -13,12 +13,6 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT u FROM User u WHERE FUNCTION('DATE', u.dob) = CURRENT_DATE")
     Optional<List<User>> findUsersWithBirthday();
-
-    @Query("SELECT u FROM User u WHERE u.email=:email AND u.password=:password")
-    Optional<User> findByUsernameAndPassword(@Param("email") String username, @Param("password") String password);
-
-    Optional<User> findByEmail(String email);
-
+    Optional<User> findByEmail(@Param("email") String email);
     boolean existsByEmail(String userName);
-
 }

@@ -1,8 +1,6 @@
 package lk.ijse.SE10_NETWORK_BACKEND.service;
 
-import lk.ijse.SE10_NETWORK_BACKEND.dto.SignInDTO;
 import lk.ijse.SE10_NETWORK_BACKEND.dto.UserDTO;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -10,10 +8,9 @@ import java.util.List;
 @Service
 public interface UserService {
     int saveUser(UserDTO userDTO);
-    UserDTO updateUser(UserDTO userDTO);
+    int updateUser(UserDTO userDTO);
     boolean deleteUser(Long id);
-    UserDTO getUserById(Long id);
+    UserDTO getUserByEmail(String email);
     List<UserDTO> getUsersWithBirthdaysToday();
-    UserDTO configureUser(SignInDTO signInDTO);
     UserDTO loadUserDetailsByEmail(String email);
 }
