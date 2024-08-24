@@ -1,7 +1,5 @@
 package lk.ijse.SE10_NETWORK_BACKEND.config;
 
-
-
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,7 +24,6 @@ public class JwtFilter extends OncePerRequestFilter {
 
     @Autowired
     private JwtUtil jwtUtil;
-
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -54,9 +51,6 @@ public class JwtFilter extends OncePerRequestFilter {
             }
 
         }
-
         filterChain.doFilter(request, response);
-
     }
 }
-
