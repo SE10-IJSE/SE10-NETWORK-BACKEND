@@ -17,6 +17,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -41,8 +42,8 @@ public class RegistrationController {
      * Constructor for RegistrationController.
      *
      * @param authenticationManager The authentication manager for handling authentication.
-     * @param jwtUtil The utility class for handling JWT operations.
-     * @param userDetailsService The service for loading user details.
+     * @param jwtUtil               The utility class for handling JWT operations.
+     * @param userDetailsService    The service for loading user details.
      */
     public RegistrationController(AuthenticationManager authenticationManager, JwtUtil jwtUtil, UserDetailsService userDetailsService) {
         this.authenticationManager = authenticationManager;
@@ -96,7 +97,8 @@ public class RegistrationController {
      * @return ResponseEntity with a ResponseDTO indicating the result of the sign-up attempt.
      */
     @PostMapping("/sign_up")
-    public ResponseEntity<ResponseDTO> signUp(@RequestBody UserDTO userDTO) {
+    public ResponseEntity<ResponseDTO> signUp(
+            @ModelAttribute UserDTO userDTO) {
         try {
             int res = userService.saveUser(userDTO);
             switch (res) {

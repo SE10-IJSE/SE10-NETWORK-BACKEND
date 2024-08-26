@@ -1,5 +1,6 @@
 package lk.ijse.SE10_NETWORK_BACKEND.service;
 
+import lk.ijse.SE10_NETWORK_BACKEND.dto.ImageUpdateDTO;
 import lk.ijse.SE10_NETWORK_BACKEND.dto.UserDTO;
 import org.springframework.stereotype.Service;
 
@@ -13,4 +14,6 @@ public interface UserService {
     UserDTO getUserByEmail(String email);
     List<UserDTO> getUsersWithBirthdaysToday();
     UserDTO loadUserDetailsByEmail(String email);
+    boolean updateUserImage(ImageUpdateDTO dto);
+    boolean deleteUserImage(ImageUpdateDTO dto);
 }

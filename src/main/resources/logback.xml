@@ -9,7 +9,7 @@
     </appender>
 
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>/home/gayanuka/Documents/GDSE68-Sem02/SE10/Tasks/SE10-NETWORK-BACKEND/app.log</file>
+        <file>C:\Users\User\Documents\Code\SE10 Social Network\SE10-NETWORK-BACKEND\app.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <fileNamePattern>logs/app.%d{yyyy-MM-dd}.log</fileNamePattern>
             <maxHistory>30</maxHistory>

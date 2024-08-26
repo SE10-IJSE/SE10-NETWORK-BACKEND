@@ -1,9 +1,11 @@
 package lk.ijse.SE10_NETWORK_BACKEND.service.impl;
 
+import lk.ijse.SE10_NETWORK_BACKEND.dto.ImageUpdateDTO;
 import lk.ijse.SE10_NETWORK_BACKEND.dto.UserDTO;
 import lk.ijse.SE10_NETWORK_BACKEND.entity.User;
 import lk.ijse.SE10_NETWORK_BACKEND.repository.UserRepository;
 import lk.ijse.SE10_NETWORK_BACKEND.service.UserService;
+import lk.ijse.SE10_NETWORK_BACKEND.util.ImageUploadUtil;
 import lk.ijse.SE10_NETWORK_BACKEND.util.VarList;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,12 +16,13 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 @Service
-public class UserServiceIMPL implements UserService , UserDetailsService {
+public class UserServiceIMPL implements UserService, UserDetailsService {
     @Autowired
     private UserRepository userRepository;
 
@@ -37,8 +40,18 @@ public class UserServiceIMPL implements UserService , UserDetailsService {
             userDTO.setPassword(passwordEncoder.encode(userDTO.getPassword()));
             userDTO.setRole("USER");
         }
-        userRepository.save(modelMapper.map(userDTO, User.class));
-        return VarList.Created;
+        User save = userRepository.save(modelMapper.map(userDTO, User.class));
+
+        try {
+            if (save != null) {
+                if (userDTO.getProfilePic() != null) ImageUploadUtil.saveFile(save.getUserId(), "profile", userDTO.getProfilePic());
+                if (userDTO.getCoverPic() != null) ImageUploadUtil.saveFile(save.getUserId(), "cover", userDTO.getCoverPic());
+                return VarList.Created;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return VarList.Internal_Server_Error;
     }
 
     @Override
@@ -55,6 +68,7 @@ public class UserServiceIMPL implements UserService , UserDetailsService {
                 user.setName(userDTO.getName());
                 user.setDob(userDTO.getDob());
                 user.setEmail(userDTO.getEmail());
+                user.setBio(userDTO.getBio());
                 userRepository.save(user);
                 return VarList.OK;
             } else {
@@ -80,7 +94,8 @@ public class UserServiceIMPL implements UserService , UserDetailsService {
         User user = userRepository.findByEmail(email).orElse(null);
 
         if (user != null) {
-            return modelMapper.map(user, UserDTO.class);
+            UserDTO dto = modelMapper.map(user, UserDTO.class);
+            return ImageUploadUtil.getUserImages(dto);
         }
         return null;
     }
@@ -105,6 +120,36 @@ public class UserServiceIMPL implements UserService , UserDetailsService {
     }
 
     @Override
+    public boolean updateUserImage(ImageUpdateDTO dto) {
+        User user = userRepository.findByEmail(dto.getEmail()).orElse(null);
+
+        if (user != null) {
+            try {
+                ImageUploadUtil.saveFile(user.getUserId(), dto.getType(), dto.getImage());
+                return true;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean deleteUserImage(ImageUpdateDTO dto) {
+        User user = userRepository.findByEmail(dto.getEmail()).orElse(null);
+
+        if (user != null) {
+            try {
+                ImageUploadUtil.deleteFile(user.getUserId(), dto.getType());
+                return true;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return false;
+    }
+
+    @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         System.out.println("Email: " + email);
         User user = userRepository.findByEmail(email).orElse(null);
@@ -116,7 +161,7 @@ public class UserServiceIMPL implements UserService , UserDetailsService {
 
     /**
      * Retrieves the authorities (roles) for a given user.
-     *
+     * <p>
      * This method creates a set of granted authorities based on the user's role.
      * The authorities are used by Spring Security to enforce role-based access control.
      *
