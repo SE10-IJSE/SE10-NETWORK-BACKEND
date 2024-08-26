@@ -1,6 +1,7 @@
 package lk.ijse.SE10_NETWORK_BACKEND.controller;
 
 import lk.ijse.SE10_NETWORK_BACKEND.dto.AuthDTO;
+import lk.ijse.SE10_NETWORK_BACKEND.dto.ImageUpdateDTO;
 import lk.ijse.SE10_NETWORK_BACKEND.dto.ResponseDTO;
 import lk.ijse.SE10_NETWORK_BACKEND.dto.UserDTO;
 import lk.ijse.SE10_NETWORK_BACKEND.service.UserService;
@@ -41,7 +42,8 @@ public class UserController {
      */
     @PutMapping
     public ResponseEntity<ResponseDTO> updateUser(@RequestBody UserDTO userDTO) {
-        System.out.println(userDTO.getNewPassword());
+        logger.info("Received request to update user with email: {}", userDTO.getEmail());
+
         try {
             int res = userService.updateUser(userDTO);
             switch (res) {
@@ -52,28 +54,68 @@ public class UserController {
                     authDTO.setToken(token);
                     logger.info("User updated successfully with email: {}", userDTO.getEmail());
                     return ResponseEntity.status(HttpStatus.OK)
-                            .body(new ResponseDTO(VarList.OK, "Success", authDTO));
+                            .body(new ResponseDTO(VarList.OK, "User updated successfully", authDTO));
                 }
                 case VarList.Not_Acceptable -> {
-                    logger.warn("User update failed for email: {}", userDTO.getEmail());
+                    logger.warn("User update failed due to password mismatch for email: {}", userDTO.getEmail());
                     return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE)
                             .body(new ResponseDTO(VarList.Not_Acceptable, "Password does not match", null));
                 }
                 case VarList.Not_Found -> {
-                    logger.warn("User update failed for id: {}", userDTO.getUserId());
+                    logger.warn("User not found with ID: {}", userDTO.getUserId());
                     return ResponseEntity.status(HttpStatus.NOT_FOUND)
                             .body(new ResponseDTO(VarList.Not_Found, "User does not exist", null));
                 }
                 default -> {
-                    logger.error("Error occurred during update for email: {}", userDTO.getEmail());
+                    logger.error("An unexpected error occurred during update for email: {}", userDTO.getEmail());
                     return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
-                            .body(new ResponseDTO(VarList.Bad_Gateway, "Error", null));
+                            .body(new ResponseDTO(VarList.Bad_Gateway, "Error occurred", null));
                 }
             }
         } catch (Exception e) {
             logger.error("Update failed for email: {}", userDTO.getEmail(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ResponseDTO(VarList.Internal_Server_Error, e.getMessage(), null));
+                    .body(new ResponseDTO(VarList.Internal_Server_Error, "Internal server error occurred", null));
+        }
+    }
+
+    /**
+     * Update a user's image (profile or cover).
+     *
+     * @param dto The data transfer object containing the image update information.
+     * @return ResponseEntity indicating whether the image update was successful.
+     */
+    @PutMapping("/image")
+    public ResponseEntity<Boolean> updateUserImage(@ModelAttribute ImageUpdateDTO dto) {
+        logger.info("Received request to update {} image for user with email: {}", dto.getType(), dto.getEmail());
+
+        boolean updated = userService.updateUserImage(dto);
+        if (updated) {
+            logger.info("User {} image updated successfully for email: {}", dto.getType(), dto.getEmail());
+            return ResponseEntity.status(HttpStatus.OK).body(true);
+        } else {
+            logger.warn("Failed to update {} image for user with email: {}", dto.getType(), dto.getEmail());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(false);
+        }
+    }
+
+    /**
+     * Delete a user's image (profile or cover).
+     *
+     * @param dto The data transfer object containing the image delete information.
+     * @return ResponseEntity indicating whether the image deletion was successful.
+     */
+    @DeleteMapping("/image")
+    public ResponseEntity<Boolean> deleteUserImage(@RequestBody ImageUpdateDTO dto) {
+        logger.info("Received request to delete {} image for user with email: {}", dto.getType(), dto.getEmail());
+
+        boolean deleted = userService.deleteUserImage(dto);
+        if (deleted) {
+            logger.info("User {} image deleted successfully for email: {}", dto.getType(), dto.getEmail());
+            return ResponseEntity.status(HttpStatus.OK).body(true);
+        } else {
+            logger.warn("Failed to delete {} image for user with email: {}", dto.getType(), dto.getEmail());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(false);
         }
     }
 
@@ -85,8 +127,9 @@ public class UserController {
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteUser(@PathVariable("id") Long id) {
-        boolean deleted = userService.deleteUser(id);
+        logger.info("Received request to delete user with ID: {}", id);
 
+        boolean deleted = userService.deleteUser(id);
         if (deleted) {
             logger.info("User with ID: {} deleted successfully", id);
             return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
@@ -97,15 +140,16 @@ public class UserController {
     }
 
     /**
-     * Get a user by ID.
+     * Get a user by email, extracted from the JWT token.
      *
-     * @param token The token of the user to retrieve.
+     * @param token The JWT token from the Authorization header.
      * @return ResponseEntity containing the UserDTO if found, or a not found status.
      */
     @GetMapping
     public ResponseEntity<UserDTO> getUserByEmail(@RequestHeader("Authorization") String token) {
+        logger.info("Received request to retrieve user by JWT token");
+
         String email = jwtUtil.getUsernameFromToken(token.substring(7));
-        System.out.println(email);
         UserDTO dto = userService.getUserByEmail(email);
 
         if (dto != null) {
@@ -124,8 +168,9 @@ public class UserController {
      */
     @GetMapping("/birthdays")
     public ResponseEntity<List<UserDTO>> getUsersWithBirthdaysToday() {
-        List<UserDTO> usersWithBirthdaysToday = userService.getUsersWithBirthdaysToday();
+        logger.info("Received request to retrieve users with birthdays today");
 
+        List<UserDTO> usersWithBirthdaysToday = userService.getUsersWithBirthdaysToday();
         if (usersWithBirthdaysToday != null && !usersWithBirthdaysToday.isEmpty()) {
             logger.info("Found {} users with birthdays today", usersWithBirthdaysToday.size());
             return ResponseEntity.status(HttpStatus.OK).body(usersWithBirthdaysToday);

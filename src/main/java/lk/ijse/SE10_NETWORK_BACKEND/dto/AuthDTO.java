@@ -5,11 +5,13 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.io.Serializable;
+
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
 @Component
-public class AuthDTO {
+public class AuthDTO implements Serializable {
     private String email;
     private String token;
     private String refreshToken;

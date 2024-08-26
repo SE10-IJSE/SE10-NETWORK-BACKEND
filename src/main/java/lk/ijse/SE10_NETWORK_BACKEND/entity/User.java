@@ -23,6 +23,8 @@ public class User {
 
     private String email;
 
+    private String batch;
+
     private String password;
 
     private LocalDate dob;

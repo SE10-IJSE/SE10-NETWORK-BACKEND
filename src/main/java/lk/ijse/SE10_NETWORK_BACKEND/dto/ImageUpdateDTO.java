@@ -3,17 +3,15 @@ package lk.ijse.SE10_NETWORK_BACKEND.dto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.Serializable;
 
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-@Component
-public class ResponseDTO implements Serializable {
-    private int code;
-    private String message;
-    private Object data;
+public class ImageUpdateDTO implements Serializable {
+    private String type;
+    private MultipartFile image;
+    private String email;
 }
-
