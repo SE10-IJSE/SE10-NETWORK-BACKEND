@@ -181,28 +181,24 @@ public class UserController {
     }
 
     /**
-     * Validate a JWT token.
+     * Validates the JWT token received in the request header.
+     * <p>
+     * This method is called after the JwtFilter has already validated the token.
+     * If the request reaches this point, it means the token is valid and the user is authenticated.
+     * <p>
+     * The frontend typically checks for the presence of a cookie containing the JWT token.
+     * If the token is present, it is sent to the backend, where this method simply confirms that
+     * everything is fine by returning an HTTP 200 OK response with a body of {@code true}.
      *
-     * @param token The JWT token to be validated, provided in the Authorization header.
-     * @return ResponseEntity indicating whether the token is valid.
+     * @param token the JWT token extracted from the "Authorization" header, expected to be prefixed with "Bearer "
+     * @return a {@link ResponseEntity} with an HTTP 200 OK status and a body of {@code true}, indicating the token is valid
      */
     @PostMapping("/validate")
     public ResponseEntity<Boolean> validateUser(@RequestHeader("Authorization") String token) {
         logger.info("Received request to validate JWT token");
-
         String jwtToken = token.substring(7); // Remove "Bearer " prefix
         String username = jwtUtil.getUsernameFromToken(jwtToken);
-
         logger.debug("Extracted username from token: {}", username);
-
-        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-        boolean isValid = jwtUtil.validateToken(jwtToken, userDetails);
-
-        if (isValid) {
-            logger.info("JWT token is valid for username: {}", username);
-        } else {
-            logger.warn("JWT token is invalid for username: {}", username);
-        }
-        return ResponseEntity.status(HttpStatus.OK).body(isValid);
+        return ResponseEntity.status(HttpStatus.OK).body(true);
     }
 }
