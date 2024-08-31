@@ -1,6 +1,7 @@
 package lk.ijse.SE10_NETWORK_BACKEND.service.impl;
 
 import lk.ijse.SE10_NETWORK_BACKEND.dto.ImageUpdateDTO;
+import lk.ijse.SE10_NETWORK_BACKEND.dto.UserSearchDTO;
 import lk.ijse.SE10_NETWORK_BACKEND.dto.UserDTO;
 import lk.ijse.SE10_NETWORK_BACKEND.entity.User;
 import lk.ijse.SE10_NETWORK_BACKEND.repository.UserRepository;
@@ -9,6 +10,9 @@ import lk.ijse.SE10_NETWORK_BACKEND.util.ImageUploadUtil;
 import lk.ijse.SE10_NETWORK_BACKEND.util.VarList;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -17,9 +21,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class UserServiceIMPL implements UserService, UserDetailsService {
@@ -30,29 +33,46 @@ public class UserServiceIMPL implements UserService, UserDetailsService {
     private ModelMapper modelMapper;
 
     @Autowired
-    PasswordEncoder passwordEncoder;
+    private PasswordEncoder passwordEncoder;
 
     @Override
     public int saveUser(UserDTO userDTO) {
-        if (userRepository.existsByEmail(userDTO.getEmail())) {
+        boolean emailExists = userRepository.existsByEmail(userDTO.getEmail());
+        User user = userRepository.findById(userDTO.getUserId()).orElse(null);
+
+        if ((user != null && !emailExists) || (user == null && emailExists)) {
             return VarList.Not_Acceptable;
-        } else {
-            userDTO.setPassword(passwordEncoder.encode(userDTO.getPassword()));
-            userDTO.setRole("USER");
         }
-        User save = userRepository.save(modelMapper.map(userDTO, User.class));
+
+        if (user == null) {
+            user = modelMapper.map(userDTO, User.class);
+        } else {
+            user.setName(userDTO.getName());
+            user.setBatch(userDTO.getBatch());
+            user.setDob(userDTO.getDob());
+            user.setStatus("Active");
+            user.setBio(userDTO.getBio());
+        }
+
+        user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
+        user.setRole("USER");
+        User savedUser = userRepository.save(user);
 
         try {
-            if (save != null) {
-                if (userDTO.getProfilePic() != null) ImageUploadUtil.saveFile(save.getUserId(), "profile", userDTO.getProfilePic());
-                if (userDTO.getCoverPic() != null) ImageUploadUtil.saveFile(save.getUserId(), "cover", userDTO.getCoverPic());
-                return VarList.Created;
+            if (userDTO.getProfilePic() != null) {
+                ImageUploadUtil.saveFile(savedUser.getUserId(), "profile", userDTO.getProfilePic());
             }
+            if (userDTO.getCoverPic() != null) {
+                ImageUploadUtil.saveFile(savedUser.getUserId(), "cover", userDTO.getCoverPic());
+            }
+            return VarList.Created;
         } catch (IOException e) {
             e.printStackTrace();
         }
+
         return VarList.Internal_Server_Error;
     }
+
 
     @Override
     public int updateUser(UserDTO userDTO) {
@@ -83,7 +103,8 @@ public class UserServiceIMPL implements UserService, UserDetailsService {
         User user = userRepository.findById(id).orElse(null);
 
         if (user != null) {
-            userRepository.delete(user);
+            user.setStatus("Suspended");
+            userRepository.save(user);
             return true;
         }
         return false;
@@ -101,14 +122,31 @@ public class UserServiceIMPL implements UserService, UserDetailsService {
     }
 
     @Override
-    public List<UserDTO> getUsersWithBirthdaysToday() {
+    public List<String> getUserNamesWithBirthdaysToday() {
         List<User> users = userRepository.findUsersWithBirthday().orElse(null);
 
         if (users != null) {
-            return users.stream().map(User -> modelMapper.map(User, UserDTO.class)).toList();
+            List<String> list = new ArrayList<>();
+            users.forEach(user -> list.add(user.getName()));
+            return list;
         }
         return null;
     }
+
+    @Override
+    public List<UserSearchDTO> getUsersWithBirthdaysToday() {
+        List<User> users = userRepository.findUsersWithBirthday().orElse(Collections.emptyList());
+
+        if (!users.isEmpty()) {
+            return users.stream().map(user -> {
+                UserSearchDTO dto = modelMapper.map(user, UserSearchDTO.class);
+                dto.setProfileImg(ImageUploadUtil.getProfileImage(user.getUserId()));
+                return dto;
+            }).collect(Collectors.toList());
+        }
+        return Collections.emptyList();
+    }
+
 
     @Override
     public UserDTO loadUserDetailsByEmail(String email) {
@@ -151,7 +189,6 @@ public class UserServiceIMPL implements UserService, UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        System.out.println("Email: " + email);
         User user = userRepository.findByEmail(email).orElse(null);
         if (user == null) {
             throw new UsernameNotFoundException("User Not Found");
@@ -159,9 +196,23 @@ public class UserServiceIMPL implements UserService, UserDetailsService {
         return new org.springframework.security.core.userdetails.User(user.getEmail(), user.getPassword(), getAuthorities(user));
     }
 
+    @Override
+    public List<UserSearchDTO> findUsersByNameOrNameLike(String name, int page) {
+        Pageable pageable = PageRequest.of(page, 10);
+        Page<User> users = userRepository.findUsersByNameOrNameLike(name, pageable);
+
+        if (!users.isEmpty()) {
+            return users.stream().map(user -> {
+                UserSearchDTO dto = modelMapper.map(user, UserSearchDTO.class);
+                dto.setProfileImg(ImageUploadUtil.getProfileImage(user.getUserId()));
+                return dto;
+            }).collect(Collectors.toList());
+        }
+        return null;
+    }
+
     /**
      * Retrieves the authorities (roles) for a given user.
-     * <p>
      * This method creates a set of granted authorities based on the user's role.
      * The authorities are used by Spring Security to enforce role-based access control.
      *
