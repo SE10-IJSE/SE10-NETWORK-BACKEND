@@ -14,10 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -33,28 +30,12 @@ public class RegistrationController {
     @Autowired
     private JwtUtil jwtUtil;
 
-    @Autowired
-    private UserDetailsService userDetailsService;
-
     private static final Logger logger = LoggerFactory.getLogger(RegistrationController.class);
 
     /**
-     * Constructor for RegistrationController.
+     * Handles user sign-in requests.
      *
-     * @param authenticationManager The authentication manager for handling authentication.
-     * @param jwtUtil               The utility class for handling JWT operations.
-     * @param userDetailsService    The service for loading user details.
-     */
-    public RegistrationController(AuthenticationManager authenticationManager, JwtUtil jwtUtil, UserDetailsService userDetailsService) {
-        this.authenticationManager = authenticationManager;
-        this.jwtUtil = jwtUtil;
-        this.userDetailsService = userDetailsService;
-    }
-
-    /**
-     * Handle user sign-in.
-     *
-     * @param dto The SignInDTO containing email and password for authentication.
+     * @param dto SignInDTO containing the email and password for authentication.
      * @return ResponseEntity with a ResponseDTO indicating the result of the sign-in attempt.
      */
     @PostMapping("/sign_in")
@@ -63,96 +44,67 @@ public class RegistrationController {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(dto.getEmail(), dto.getPassword()));
         } catch (Exception e) {
-            logger.error("Authentication failed for email: {}", dto.getEmail(), e);
+            logger.error("Sign-in failed for email: {}. Error: {}", dto.getEmail(), e.getMessage());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new ResponseDTO(VarList.Unauthorized, "Invalid Credentials", e.getMessage()));
         }
 
         UserDTO loadedUser = userService.loadUserDetailsByEmail(dto.getEmail());
         if (loadedUser == null) {
-            logger.warn("User with email: {} not found", dto.getEmail());
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(new ResponseDTO(VarList.Conflict, "Authorization Failure! Please Try Again", null));
+            logger.warn("User not found for email: {}", dto.getEmail());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ResponseDTO(VarList.Conflict, "User not found", null));
         }
 
         String token = jwtUtil.generateToken(loadedUser);
         if (token == null || token.isEmpty()) {
             logger.warn("Failed to generate token for email: {}", dto.getEmail());
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(new ResponseDTO(VarList.Conflict, "Authorization Failure! Please Try Again", null));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ResponseDTO(VarList.Conflict, "Token generation failed", null));
         }
 
         AuthDTO authDTO = new AuthDTO();
         authDTO.setEmail(loadedUser.getEmail());
         authDTO.setToken(token);
-        logger.info("User signed in successfully with email: {}", dto.getEmail());
-        return ResponseEntity.status(HttpStatus.OK)
-                .body(new ResponseDTO(VarList.Created, "Sign In Successfully", authDTO));
+        logger.info("Sign-in successful for email: {}", dto.getEmail());
+        return ResponseEntity.ok(new ResponseDTO(VarList.Created, "Sign-in successful", authDTO));
     }
 
     /**
-     * Handle user sign-up.
+     * Handles user sign-up requests.
      *
-     * @param userDTO The UserDTO containing user details for registration.
+     * @param userDTO UserDTO containing the user details for registration.
      * @return ResponseEntity with a ResponseDTO indicating the result of the sign-up attempt.
      */
     @PostMapping("/sign_up")
-    public ResponseEntity<ResponseDTO> signUp(
-            @ModelAttribute UserDTO userDTO) {
+    public ResponseEntity<ResponseDTO> signUp(@ModelAttribute UserDTO userDTO) {
         try {
-            int res = userService.saveUser(userDTO);
-            switch (res) {
+            int result = userService.saveUser(userDTO);
+            switch (result) {
                 case VarList.Created -> {
                     String token = jwtUtil.generateToken(userDTO);
                     AuthDTO authDTO = new AuthDTO();
                     authDTO.setEmail(userDTO.getEmail());
                     authDTO.setToken(token);
-                    logger.info("User signed up successfully with email: {}", userDTO.getEmail());
+                    logger.info("Sign-up successful for email: {}", userDTO.getEmail());
                     return ResponseEntity.status(HttpStatus.CREATED)
-                            .body(new ResponseDTO(VarList.Created, "Success", authDTO));
+                            .body(new ResponseDTO(VarList.Created, "User created successfully", authDTO));
                 }
                 case VarList.Not_Acceptable -> {
-                    logger.warn("Email already used for email: {}", userDTO.getEmail());
-                    return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE)
-                            .body(new ResponseDTO(VarList.Not_Acceptable, "Email Already Used", null));
+                    logger.warn("Email already in use for email: {}", userDTO.getEmail());
+                    return ResponseEntity.status(HttpStatus.CONFLICT)
+                            .body(new ResponseDTO(VarList.Not_Acceptable, "Email already in use", null));
                 }
                 default -> {
-                    logger.error("Error occurred during sign-up for email: {}", userDTO.getEmail());
+                    logger.error("Sign-up error for email: {}", userDTO.getEmail());
                     return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
-                            .body(new ResponseDTO(VarList.Bad_Gateway, "Error", null));
+                            .body(new ResponseDTO(VarList.Bad_Gateway, "Sign-up failed", null));
                 }
             }
         } catch (Exception e) {
-            logger.error("Sign-up failed for email: {}", userDTO.getEmail(), e);
+            logger.error("Sign-up exception for email: {}. Error: {}", userDTO.getEmail(), e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ResponseDTO(VarList.Internal_Server_Error, e.getMessage(), null));
+                    .body(new ResponseDTO(VarList.Internal_Server_Error, "Sign-up failed", null));
         }
-    }
-
-    /**
-     * Validate a JWT token.
-     *
-     * @param token The JWT token to be validated, provided in the Authorization header.
-     * @return ResponseEntity indicating whether the token is valid.
-     */
-    @GetMapping("/validate")
-    public ResponseEntity<Boolean> validateUser(@RequestHeader("Authorization") String token) {
-        logger.info("Received request to validate JWT token");
-
-        String jwtToken = token.substring(7); // Remove "Bearer " prefix
-        String username = jwtUtil.getUsernameFromToken(jwtToken);
-
-        logger.debug("Extracted username from token: {}", username);
-
-        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-        boolean isValid = jwtUtil.validateToken(jwtToken, userDetails);
-
-        if (isValid) {
-            logger.info("JWT token is valid for username: {}", username);
-        } else {
-            logger.warn("JWT token is invalid for username: {}", username);
-        }
-
-        return ResponseEntity.status(HttpStatus.OK).body(isValid);
     }
 }
