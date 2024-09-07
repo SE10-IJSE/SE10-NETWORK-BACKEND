@@ -19,4 +19,5 @@ public interface UserService {
     boolean updateUserImage(ImageUpdateDTO dto);
     boolean deleteUserImage(ImageUpdateDTO dto);
     List<UserSearchDTO> findUsersByNameOrNameLike(String name, int page);
+    String getProfileImg(String token);
 }

@@ -211,6 +211,18 @@ public class UserController {
     }
 
     /**
+     * Retrieves the profile image of the authenticated user based on the provided JWT token.
+     *
+     * @param token The JWT token from the Authorization header (with "Bearer " prefix).
+     * @return ResponseEntity with the profile image URL and HTTP status 200 (OK).
+     */
+    @GetMapping("/profileImg")
+    public ResponseEntity<String> getProfileImg(@RequestHeader("Authorization") String token) {
+        String profileImgUrl = userService.getProfileImg(token.substring(7));
+        return ResponseEntity.status(HttpStatus.OK).body(profileImgUrl);
+    }
+
+    /**
      * Validates the JWT token received in the request header.
      *
      * @param token The JWT token extracted from the Authorization header, prefixed with "Bearer ".

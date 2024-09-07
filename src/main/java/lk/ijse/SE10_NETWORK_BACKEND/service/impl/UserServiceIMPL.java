@@ -7,6 +7,7 @@ import lk.ijse.SE10_NETWORK_BACKEND.entity.User;
 import lk.ijse.SE10_NETWORK_BACKEND.repository.UserRepository;
 import lk.ijse.SE10_NETWORK_BACKEND.service.UserService;
 import lk.ijse.SE10_NETWORK_BACKEND.util.ImageUploadUtil;
+import lk.ijse.SE10_NETWORK_BACKEND.util.JwtUtil;
 import lk.ijse.SE10_NETWORK_BACKEND.util.VarList;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +35,9 @@ public class UserServiceIMPL implements UserService, UserDetailsService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtUtil jwtUtil;
 
     @Override
     public int saveUser(UserDTO userDTO) {
@@ -209,6 +213,13 @@ public class UserServiceIMPL implements UserService, UserDetailsService {
             }).collect(Collectors.toList());
         }
         return null;
+    }
+
+    @Override
+    public String getProfileImg(String token) {
+        String username = jwtUtil.getUsernameFromToken(token);
+        User user = userRepository.findByEmail(username).orElse(null);
+        return ImageUploadUtil.getProfileImage(user.getUserId());
     }
 
     /**

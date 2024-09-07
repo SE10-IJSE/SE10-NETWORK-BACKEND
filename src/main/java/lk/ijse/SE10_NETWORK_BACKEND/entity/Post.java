@@ -1,8 +1,6 @@
 package lk.ijse.SE10_NETWORK_BACKEND.entity;
 
-
 import jakarta.persistence.*;
-import lk.ijse.SE10_NETWORK_BACKEND.dto.PostDTO;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -25,7 +23,6 @@ public class Post {
 
     private String content;
 
-    @Column(columnDefinition = "boolean default true")
     private boolean status;
 
     @CreationTimestamp
@@ -44,23 +41,6 @@ public class Post {
     @JoinColumn(name = "approved_by")
     private User approvedBy;
 
-    @OneToMany(mappedBy = "post")
+    @OneToMany(mappedBy = "post", fetch = FetchType.EAGER)
     private List<Inspire> inspires;
-
-    public Post(String content, User user) {
-        this.content = content;
-        this.user = user;
-    }
-
-    public PostDTO toDto() {
-        return new PostDTO(
-                postId,
-                content,
-                createdAt,
-                updatedAt,
-                user.getUserId(),
-                approvedBy == null ? null : approvedBy.getUserId()
-        );
-    }
 }
-
