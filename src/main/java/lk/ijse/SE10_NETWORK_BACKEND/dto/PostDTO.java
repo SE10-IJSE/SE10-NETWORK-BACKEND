@@ -15,12 +15,9 @@ public class PostDTO implements Serializable {
     private String content;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private Long userId;
-    private Long approvedBy;
-
-    public PostDTO(String content, Long userId) {
-        this.content = content;
-        this.userId = userId;
-    }
+    private String approvedBy;
+    private String userName;
+    private String profileImg;
+    private int inspirationCount;
+    private boolean inspired;
 }
-
