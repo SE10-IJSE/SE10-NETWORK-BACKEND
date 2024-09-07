@@ -13,9 +13,4 @@ public class InspireDTO implements Serializable {
     private Long inspireId;
     private Long postId;
     private Long userId;
-
-    public InspireDTO(Long postId, Long userId) {
-        this.postId = postId;
-        this.userId = userId;
-    }
 }
