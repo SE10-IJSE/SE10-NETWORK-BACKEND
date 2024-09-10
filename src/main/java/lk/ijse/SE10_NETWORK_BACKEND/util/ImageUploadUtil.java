@@ -16,7 +16,7 @@ import java.util.Objects;
 public class ImageUploadUtil {
 
     private static final Logger logger = LoggerFactory.getLogger(ImageUploadUtil.class);
-    private static final String path = "C:\\Users\\User\\Documents\\Code\\SE10 Social Network\\SE10-NETWORK-BACKEND\\src\\main\\resources\\static\\";
+    private static final String path = "/media/lokitha/Data Drive/Projects/SE10 Social Network/SE10-NETWORK-BACKEND/src/main/resources/static/";
     private static final String[] formats = {".jpg", ".png", ".jpeg"};
 
     /**
@@ -29,6 +29,11 @@ public class ImageUploadUtil {
      * @throws IOException If an error occurs during file saving.
      */
     public static void saveFile(Long userId, String type, MultipartFile multipartFile) throws IOException {
+        File staticDir = new File(path);
+        if (!staticDir.exists()) {
+            staticDir.mkdirs();
+            logger.info("Created static directory: {}", path);
+        }
         String uploadDir = path + userId;
         Path uploadPath = Paths.get(uploadDir);
 
@@ -93,7 +98,7 @@ public class ImageUploadUtil {
 
         try {
             for (String format : formats) {
-                File profilePic = new File(path + userId + "\\" + userId + "_profile_photo" + format);
+                File profilePic = new File(path + userId + "/" + userId + "_profile_photo" + format);
 
                 if (profilePic.exists()) {
                     logger.info("Profile photo found for user {}", userId);
@@ -120,7 +125,7 @@ public class ImageUploadUtil {
 
         try {
             for (String format : formats) {
-                File coverPic = new File(path + userId + "\\" + userId + "_cover_photo" + format);
+                File coverPic = new File(path + userId + "/" + userId + "_cover_photo" + format);
 
                 if (coverPic.exists()) {
                     logger.info("Cover photo found for user {}", userId);

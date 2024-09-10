@@ -40,6 +40,7 @@ public class PostServiceImpl implements PostService {
         if (user != null) {
             Post post = modelMapper.map(postDTO, Post.class);
             post.setUser(user);
+            post.setStatus("PENDING");
             Post save = postRepository.save(post);
             return modelMapper.map(save, PostDTO.class);
         }
@@ -47,11 +48,11 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public PostDTO updatePost(PostDTO postDTO) {
-        Post post = postRepository.findById(postDTO.getPostId()).orElse(null);
+    public PostDTO updatePost(Long postId, String content) {
+        Post post = postRepository.findById(postId).orElse(null);
 
         if (post != null) {
-            post.setContent(postDTO.getContent());
+            post.setContent(content);
             Post save = postRepository.save(post);
             return modelMapper.map(save, PostDTO.class);
         }
@@ -69,15 +70,20 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public PostDTO updatePostStatus(Long postId, Long adminId) {
-        User user = userRepository.findById(adminId).orElse(null);
+    public PostDTO updatePostStatus(Long postId, String status, String token) {
+        String username = jwtUtil.getUsernameFromToken(token.substring(7));
+        User user = userRepository.findByEmail(username).orElse(null);
+        Post post = postRepository.findById(postId).orElse(null);
 
-        if (user != null) {
-            Post post = postRepository.findById(postId).orElse(null);
-
-            if (post != null) {
-                post.setStatus(true);
-                post.setApprovedBy(user);
+        if (post != null) {
+            if (status.equals("APPROVED")) {
+                post.setStatus(status);
+                post.setVerifiedBy(user);
+                Post save = postRepository.save(post);
+                return modelMapper.map(save, PostDTO.class);
+            } else {
+                post.setStatus(status);
+                post.setVerifiedBy(user);
                 Post save = postRepository.save(post);
                 return modelMapper.map(save, PostDTO.class);
             }
@@ -123,22 +129,58 @@ public class PostServiceImpl implements PostService {
 
         if (!postsPage.isEmpty()) {
             return postsPage.getContent().stream()
-                    .map(post -> modelMapper.map(post, PostDTO.class))
+                    .map(post -> {
+                        PostDTO dto = modelMapper.map(post, PostDTO.class);
+                        dto.setUserName(post.getUser().getName());
+                        dto.setProfileImg(ImageUploadUtil.getProfileImage(post.getUser().getUserId()));
+                        dto.setInspirationCount(post.getInspires().size());
+                        dto.setVerifiedBy(post.getVerifiedBy() != null ? post.getVerifiedBy().getName() : null);
+
+                        boolean isInspired = post.getInspires().stream()
+                                .anyMatch(inspire -> inspire.getUser().getUserId().equals(user.getUserId()));
+
+                        dto.setInspired(isInspired);
+                        return dto;
+                    })
                     .collect(Collectors.toList());
         }
         return null;
     }
 
     @Override
-    public List<PostDTO> getUnapprovedPosts(Integer pageNo, Integer postCount) {
+    public List<PostDTO> getUnapprovedPosts(Integer pageNo, Integer postCount, String token) {
         Pageable pageable= PageRequest.of(pageNo, postCount);
-        Page<Post> posts = postRepository.findUnapprovedPosts(pageable);
+        String username = jwtUtil.getUsernameFromToken(token.substring(7));
+        Page<Post> posts = postRepository.findUnapprovedPosts(username, pageable);
 
         if(!posts.isEmpty()){
+            User user = userRepository.findByEmail(username).orElse(null);
+
             return posts.getContent().stream()
-                    .map(Post -> modelMapper.map(Post, PostDTO.class))
+                    .map(post -> {
+                        PostDTO dto = modelMapper.map(post, PostDTO.class);
+                        dto.setUserName(post.getUser().getName());
+                        dto.setProfileImg(ImageUploadUtil.getProfileImage(post.getUser().getUserId()));
+                        dto.setInspirationCount(post.getInspires().size());
+
+                        boolean isInspired = post.getInspires().stream()
+                                .anyMatch(inspire -> inspire.getUser().getUserId().equals(user.getUserId()));
+
+                        dto.setInspired(isInspired);
+                        return dto;
+                    })
                     .collect(Collectors.toList());
         }
         return null;
+    }
+
+    @Override
+    public boolean deletePost(Long postId) {
+        if (!postRepository.existsById(postId)) {
+            return false;
+        } else {
+            postRepository.deleteById(postId);
+            return true;
+        }
     }
 }

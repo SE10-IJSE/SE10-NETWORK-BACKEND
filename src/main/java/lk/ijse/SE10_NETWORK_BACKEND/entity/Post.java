@@ -23,7 +23,7 @@ public class Post {
 
     private String content;
 
-    private boolean status;
+    private String status;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -38,9 +38,9 @@ public class Post {
     private User user;
 
     @ManyToOne
-    @JoinColumn(name = "approved_by")
-    private User approvedBy;
+    @JoinColumn(name = "verified_by")
+    private User verifiedBy;
 
-    @OneToMany(mappedBy = "post", fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "post", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     private List<Inspire> inspires;
 }
