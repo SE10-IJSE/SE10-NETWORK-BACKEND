@@ -8,10 +8,11 @@ import java.util.List;
 @Service
 public interface PostService {
     PostDTO savePost(PostDTO postDTO, String token);
-    PostDTO updatePost(PostDTO postDTO);
+    PostDTO updatePost(Long postId, String content);
     PostDTO getPostById(Long id);
-    PostDTO updatePostStatus(Long postId, Long adminId);
+    PostDTO updatePostStatus(Long postId, String status, String token);
     List<PostDTO> getAllPosts(Integer pageNo, Integer postCount, String token);
     List<PostDTO> getAllPostsOfUser(Integer pageNo, Integer postCount, String token);
-    List<PostDTO> getUnapprovedPosts(Integer pageNo, Integer postCount);
+    List<PostDTO> getUnapprovedPosts(Integer pageNo, Integer postCount, String token);
+    boolean deletePost(Long postId);
 }
