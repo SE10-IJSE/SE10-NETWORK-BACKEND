@@ -1,6 +1,5 @@
 package lk.ijse.SE10_NETWORK_BACKEND.controller;
 
-import jakarta.mail.MessagingException;
 import lk.ijse.SE10_NETWORK_BACKEND.dto.*;
 import lk.ijse.SE10_NETWORK_BACKEND.service.UserService;
 import lk.ijse.SE10_NETWORK_BACKEND.util.JwtUtil;
@@ -12,7 +11,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -122,17 +120,13 @@ public class UserController {
     public ResponseEntity<String> deleteUser(@PathVariable("id") Long id) {
         logger.info("Request to delete user with ID: {}", id);
 
-        try {
-            boolean deleted = userService.deleteUser(id);
-            if (deleted) {
-                logger.info("User with ID: {} deleted successfully", id);
-                return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
-            } else {
-                logger.warn("User with ID: {} not found", id);
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
-            }
-        } catch (MessagingException | IOException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        boolean deleted = userService.deleteUser(id);
+        if (deleted) {
+            logger.info("User with ID: {} deleted successfully", id);
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+        } else {
+            logger.warn("User with ID: {} not found", id);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
         }
     }
 
@@ -226,30 +220,6 @@ public class UserController {
     public ResponseEntity<String> getProfileImg(@RequestHeader("Authorization") String token) {
         String profileImgUrl = userService.getProfileImg(token.substring(7));
         return ResponseEntity.status(HttpStatus.OK).body(profileImgUrl);
-    }
-
-    /**
-     * Updates the password for a user identified by their email.
-     *
-     * @param email    The email of the user whose password is to be updated.
-     * @param password The new password to be set.
-     * @return ResponseEntity indicating the success or failure of the password update attempt.
-     */
-    @PutMapping("/updatePassword")
-    public ResponseEntity<Void> updatePassword(
-            @RequestParam("email") String email,
-            @RequestParam("password") String password) {
-        try {
-            logger.info("Starting password update for email: {}", email);
-
-            userService.updatePassword(email, password);
-
-            logger.info("Password updated successfully for email: {}", email);
-            return ResponseEntity.noContent().build();
-        } catch (RuntimeException e) {
-            logger.error("Error updating password for email: {}. Error: {}", email, e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
     }
 
     /**

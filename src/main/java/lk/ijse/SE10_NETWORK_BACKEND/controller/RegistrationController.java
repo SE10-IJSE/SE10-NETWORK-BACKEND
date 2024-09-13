@@ -1,7 +1,5 @@
 package lk.ijse.SE10_NETWORK_BACKEND.controller;
 
-import jakarta.mail.MessagingException;
-import lk.ijse.SE10_NETWORK_BACKEND.customObj.OtpResponse;
 import lk.ijse.SE10_NETWORK_BACKEND.dto.AuthDTO;
 import lk.ijse.SE10_NETWORK_BACKEND.dto.ResponseDTO;
 import lk.ijse.SE10_NETWORK_BACKEND.dto.SignInDTO;
@@ -17,8 +15,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
-
-import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -109,30 +105,6 @@ public class RegistrationController {
             logger.error("Sign-up exception for email: {}. Error: {}", userDTO.getEmail(), e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ResponseDTO(VarList.Internal_Server_Error, "Sign-up failed", null));
-        }
-    }
-
-    /**
-     * Verifies the email address of a user.
-     *
-     * @param name  The name of the user whose email is to be verified.
-     * @param email The email address to be verified.
-     * @return ResponseEntity with an OtpResponse indicating the result of the email verification attempt.
-     */
-    @GetMapping("/verify")
-    public ResponseEntity<OtpResponse> verifyEmail(
-            @RequestParam("name") String name,
-            @RequestParam("email") String email) {
-        try {
-            logger.info("Starting email verification process for user: {}, email: {}", name, email);
-
-            OtpResponse otpResponse = userService.verifyUserEmail(name, email);
-
-            logger.info("Email verification successful for user: {}, email: {}", name, email);
-            return ResponseEntity.ok(otpResponse);
-        } catch (MessagingException | IOException e) {
-            logger.error("Error during email verification for user: {}, email: {}. Error: {}", name, email, e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 }
