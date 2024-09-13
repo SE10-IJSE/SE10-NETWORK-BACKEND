@@ -37,7 +37,8 @@ public class WebSecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests( auth ->auth
                         .requestMatchers("/api/v1/auth/sign_in",
-                                "/api/v1/auth/sign_up").permitAll()
+                                "/api/v1/auth/sign_up",
+                                  "/api/v1/auth/verify").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)

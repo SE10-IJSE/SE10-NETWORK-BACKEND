@@ -1,11 +1,15 @@
 package lk.ijse.SE10_NETWORK_BACKEND.service.impl;
 
+import jakarta.mail.MessagingException;
+import lk.ijse.SE10_NETWORK_BACKEND.customObj.MailBody;
+import lk.ijse.SE10_NETWORK_BACKEND.customObj.OtpResponse;
 import lk.ijse.SE10_NETWORK_BACKEND.dto.ImageUpdateDTO;
-import lk.ijse.SE10_NETWORK_BACKEND.dto.UserSearchDTO;
 import lk.ijse.SE10_NETWORK_BACKEND.dto.UserDTO;
+import lk.ijse.SE10_NETWORK_BACKEND.dto.UserSearchDTO;
 import lk.ijse.SE10_NETWORK_BACKEND.entity.User;
 import lk.ijse.SE10_NETWORK_BACKEND.repository.UserRepository;
 import lk.ijse.SE10_NETWORK_BACKEND.service.UserService;
+import lk.ijse.SE10_NETWORK_BACKEND.util.EmailUtil;
 import lk.ijse.SE10_NETWORK_BACKEND.util.ImageUploadUtil;
 import lk.ijse.SE10_NETWORK_BACKEND.util.JwtUtil;
 import lk.ijse.SE10_NETWORK_BACKEND.util.VarList;
@@ -38,6 +42,9 @@ public class UserServiceIMPL implements UserService, UserDetailsService {
 
     @Autowired
     private JwtUtil jwtUtil;
+
+    @Autowired
+    private EmailUtil emailUtil;
 
     @Override
     public int saveUser(UserDTO userDTO) {
@@ -103,12 +110,22 @@ public class UserServiceIMPL implements UserService, UserDetailsService {
     }
 
     @Override
-    public boolean deleteUser(Long id) {
+    public boolean deleteUser(Long id) throws MessagingException, IOException {
         User user = userRepository.findById(id).orElse(null);
 
         if (user != null) {
             user.setStatus("Suspended");
             userRepository.save(user);
+            Map<String, String> map = new HashMap<>();
+            map.put("username", user.getName());
+            emailUtil.sendHtmlMessage(
+                    MailBody.builder()
+                            .templateName("AccountDeactivation")
+                            .to(user.getEmail())
+                            .subject("Account Deactivation")
+                            .replacements(map)
+                            .build()
+            );
             return true;
         }
         return false;
@@ -220,6 +237,49 @@ public class UserServiceIMPL implements UserService, UserDetailsService {
         String username = jwtUtil.getUsernameFromToken(token);
         User user = userRepository.findByEmail(username).orElse(null);
         return ImageUploadUtil.getProfileImage(user.getUserId());
+    }
+
+    @Override
+    public OtpResponse verifyUserEmail(String name, String email) throws MessagingException, IOException {
+        System.out.println(name.equals("null"));
+        String subject = "Verify Your Email";
+        String templateName = "EmailVerification";
+        if (name.equals("null")) {
+            User user = userRepository.findByEmail(email).orElse(null);
+            if (user == null) {
+                throw new RuntimeException();
+            } else {
+                name = user.getName();
+                subject = "Password Reset Request";
+                templateName = "PasswordReset";
+            }
+        }
+        String otp = emailUtil.otpGenerator().toString();
+        Map<String, String> map = new HashMap<>();
+        map.put("username", name);
+        map.put("otpCode", otp);
+        emailUtil.sendHtmlMessage(
+                MailBody.builder()
+                        .templateName(templateName)
+                        .to(email)
+                        .subject(subject)
+                        .replacements(map)
+                        .build()
+        );
+        return new OtpResponse(otp, email);
+    }
+
+    @Override
+    public void updatePassword(String email, String password) {
+        if (!userRepository.existsByEmail(email)) {
+            throw new RuntimeException("User with email " + email + " does not exist.");
+        } else {
+            User user = userRepository.findByEmail(email).orElse(null);
+            if (user != null) {
+                user.setPassword(passwordEncoder.encode(password));
+                userRepository.save(user);
+            }
+        }
     }
 
     /**
