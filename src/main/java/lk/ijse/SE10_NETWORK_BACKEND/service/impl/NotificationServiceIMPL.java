@@ -27,7 +27,6 @@ public class NotificationServiceIMPL implements NotificationService {
     @Override
     public NotificationDTO saveNotification(NotificationDTO dto) {
         User user = userRepository.findById(dto.getUserId()).orElse(null);
-
         if (user != null) {
             Notification notification = new Notification(
                     dto.getContent(),
@@ -44,14 +43,14 @@ public class NotificationServiceIMPL implements NotificationService {
     public List<NotificationDTO> getNotificationsByStudentId(Long userId, Integer pageNo, Integer notificationCount) {
         Pageable pageable = PageRequest.of(pageNo, notificationCount);
         Page<Notification> notificationsPage = notificationRepository.findByStudentId(userId, pageable);
-
         if (!notificationsPage.isEmpty()) {
             return notificationsPage.stream().map(notification -> new NotificationDTO(
                             notification.getNotificationId(),
                             notification.getContent(),
                             notification.getType(),
                             notification.getCreatedAt(),
-                            notification.getUser().getUserId()
+                            notification.getUser().getUserId(),
+                            notification.getPost().getPostId()
                     )
             ).collect(Collectors.toList());
         }

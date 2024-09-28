@@ -23,9 +23,6 @@ public class Notification {
 
     private String type;
 
-    @Column(columnDefinition = "boolean default true")
-    private boolean status;
-
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -33,6 +30,9 @@ public class Notification {
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
+
+    @OneToOne(mappedBy = "notification")
+    private Post post;
 
     public Notification(String content, String type, User user) {
         this.content = content;
