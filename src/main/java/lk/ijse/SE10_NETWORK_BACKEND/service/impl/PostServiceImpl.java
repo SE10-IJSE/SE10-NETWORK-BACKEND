@@ -1,6 +1,8 @@
 package lk.ijse.SE10_NETWORK_BACKEND.service.impl;
 
+import jakarta.transaction.Transactional;
 import lk.ijse.SE10_NETWORK_BACKEND.dto.PostDTO;
+import lk.ijse.SE10_NETWORK_BACKEND.entity.Notification;
 import lk.ijse.SE10_NETWORK_BACKEND.entity.Post;
 import lk.ijse.SE10_NETWORK_BACKEND.entity.User;
 import lk.ijse.SE10_NETWORK_BACKEND.repository.PostRepository;
@@ -70,6 +72,7 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+    @Transactional
     public PostDTO updatePostStatus(Long postId, String status, String token) {
         String username = jwtUtil.getUsernameFromToken(token.substring(7));
         User user = userRepository.findByEmail(username).orElse(null);
@@ -79,6 +82,12 @@ public class PostServiceImpl implements PostService {
             if (status.equals("APPROVED")) {
                 post.setStatus(status);
                 post.setVerifiedBy(user);
+                Notification notification = new Notification(
+                        "Your post has been approved",
+                        "APPROVED", post.getUser()
+                );
+                post.setNotification(notification);
+                notification.setPost(post);
                 Post save = postRepository.save(post);
                 return modelMapper.map(save, PostDTO.class);
             } else {

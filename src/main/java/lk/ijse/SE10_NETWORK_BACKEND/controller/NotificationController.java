@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
+@CrossOrigin("*")
 @RequestMapping("/api/v1/notification")
 public class NotificationController {
 
@@ -33,6 +34,9 @@ public class NotificationController {
             @RequestParam("pageNo") Integer pageNo,
             @RequestParam("notificationCount") Integer notificationCount) {
         List<NotificationDTO> notifications = notificationService.getNotificationsByStudentId(userId, pageNo, notificationCount);
+
+        System.out.println(notifications);
+        System.out.println(userId);
 
         if (notifications != null) {
             return ResponseEntity.status(HttpStatus.OK).body(notifications);

@@ -43,4 +43,8 @@ public class Post {
 
     @OneToMany(mappedBy = "post", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     private List<Inspire> inspires;
+
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "notification_id", referencedColumnName = "notificationId")
+    private Notification notification;
 }

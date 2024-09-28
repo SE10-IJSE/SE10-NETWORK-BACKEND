@@ -16,10 +16,5 @@ public class NotificationDTO implements Serializable {
     private String type;
     private LocalDateTime createdAt;
     private Long userId;
-
-    public NotificationDTO(String content, String type, Long userId) {
-        this.content = content;
-        this.type = type;
-        this.userId = userId;
-    }
+    private Long postId;
 }
