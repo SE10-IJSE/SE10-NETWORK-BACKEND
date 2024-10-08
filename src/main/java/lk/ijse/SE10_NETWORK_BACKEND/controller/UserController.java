@@ -229,30 +229,6 @@ public class UserController {
     }
 
     /**
-     * Updates the password for a user identified by their email.
-     *
-     * @param email    The email of the user whose password is to be updated.
-     * @param password The new password to be set.
-     * @return ResponseEntity indicating the success or failure of the password update attempt.
-     */
-    @PutMapping("/updatePassword")
-    public ResponseEntity<Void> updatePassword(
-            @RequestParam("email") String email,
-            @RequestParam("password") String password) {
-        try {
-            logger.info("Starting password update for email: {}", email);
-
-            userService.updatePassword(email, password);
-
-            logger.info("Password updated successfully for email: {}", email);
-            return ResponseEntity.noContent().build();
-        } catch (RuntimeException e) {
-            logger.error("Error updating password for email: {}. Error: {}", email, e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
-    /**
      * Validates the JWT token received in the request header.
      *
      * @param token The JWT token extracted from the Authorization header, prefixed with "Bearer ".

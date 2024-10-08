@@ -119,19 +119,67 @@ public class RegistrationController {
      * @param email The email address to be verified.
      * @return ResponseEntity with an OtpResponse indicating the result of the email verification attempt.
      */
-    @GetMapping("/verify")
+    @PostMapping("/request_otp")
     public ResponseEntity<OtpResponse> verifyEmail(
             @RequestParam("name") String name,
             @RequestParam("email") String email) {
         try {
             logger.info("Starting email verification process for user: {}, email: {}", name, email);
 
-            OtpResponse otpResponse = userService.verifyUserEmail(name, email);
+            userService.verifyUserEmail(name, email);
 
             logger.info("Email verification successful for user: {}, email: {}", name, email);
-            return ResponseEntity.ok(otpResponse);
+            return ResponseEntity.ok().build();
         } catch (MessagingException | IOException e) {
             logger.error("Error during email verification for user: {}, email: {}. Error: {}", name, email, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * Verifies the OTP sent to the user's email address.
+     *
+     * @param email The email address of the user.
+     * @param otp   The OTP to be verified.
+     * @return ResponseEntity with a ResponseDTO indicating the result of the OTP verification attempt.
+     */
+    @GetMapping("/verify_otp")
+    public ResponseEntity<Void> verifyOtp(
+            @RequestParam("email") String email,
+            @RequestParam("otp") String otp) {
+        try {
+            boolean result = userService.verifyOtp(email, otp);
+            if (result) {
+                return ResponseEntity.ok().build();
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            }
+        } catch (Exception e) {
+            logger.error("Error during OTP verification. Error: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * Updates the password for a user identified by their email.
+     *
+     * @param email    The email of the user whose password is to be updated.
+     * @param password The new password to be set.
+     * @return ResponseEntity indicating the success or failure of the password update attempt.
+     */
+    @PutMapping("/update_password")
+    public ResponseEntity<Void> updatePassword(
+            @RequestParam("email") String email,
+            @RequestParam("password") String password) {
+        try {
+            logger.info("Starting password update for email: {}", email);
+
+            userService.updatePassword(email, password);
+
+            logger.info("Password updated successfully for email: {}", email);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            logger.error("Error updating password for email: {} , Error: {}", email, e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

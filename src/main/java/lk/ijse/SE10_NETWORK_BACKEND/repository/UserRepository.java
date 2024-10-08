@@ -13,7 +13,7 @@ import java.util.Optional;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
-    @Query("SELECT u FROM User u WHERE FUNCTION('DATE', u.dob) = CURRENT_DATE")
+    @Query("SELECT u FROM User u WHERE FUNCTION('MONTH', u.dob) = FUNCTION('MONTH', CURRENT_DATE) AND FUNCTION('DAY', u.dob) = FUNCTION('DAY', CURRENT_DATE)")
     Optional<List<User>> findUsersWithBirthday();
 
     @Query("SELECT u FROM User u WHERE u.status='Active' AND u.email=:email")

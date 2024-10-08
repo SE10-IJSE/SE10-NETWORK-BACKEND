@@ -32,13 +32,16 @@ public class WebSecurityConfig {
     }
 
     @Bean
-    protected SecurityFilterChain filterChain(HttpSecurity http) throws Exception{
+    protected SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests( auth ->auth
-                        .requestMatchers("/api/v1/auth/sign_in",
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/api/v1/auth/sign_in",
                                 "/api/v1/auth/sign_up",
-                                  "/api/v1/auth/verify").permitAll()
+                                "/api/v1/auth/request_otp",
+                                "/api/v1/auth/verify_otp",
+                                "/api/v1/auth/update_password").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)

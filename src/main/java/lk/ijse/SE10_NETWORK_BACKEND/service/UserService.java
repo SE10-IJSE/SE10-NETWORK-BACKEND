@@ -1,7 +1,6 @@
 package lk.ijse.SE10_NETWORK_BACKEND.service;
 
 import jakarta.mail.MessagingException;
-import lk.ijse.SE10_NETWORK_BACKEND.customObj.OtpResponse;
 import lk.ijse.SE10_NETWORK_BACKEND.dto.ImageUpdateDTO;
 import lk.ijse.SE10_NETWORK_BACKEND.dto.UserDTO;
 import lk.ijse.SE10_NETWORK_BACKEND.dto.UserSearchDTO;
@@ -23,6 +22,7 @@ public interface UserService {
     boolean deleteUserImage(ImageUpdateDTO dto);
     List<UserSearchDTO> findUsersByNameOrNameLike(String name, int page);
     String getProfileImg(String token);
-    OtpResponse verifyUserEmail(String name, String email) throws MessagingException, IOException;
+    void verifyUserEmail(String name, String email) throws MessagingException, IOException;
     void updatePassword(String email, String password);
+    boolean verifyOtp(String email, String otp);
 }

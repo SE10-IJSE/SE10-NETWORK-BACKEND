@@ -35,9 +35,6 @@ public class NotificationController {
             @RequestParam("notificationCount") Integer notificationCount) {
         List<NotificationDTO> notifications = notificationService.getNotificationsByStudentId(userId, pageNo, notificationCount);
 
-        System.out.println(notifications);
-        System.out.println(userId);
-
         if (notifications != null) {
             return ResponseEntity.status(HttpStatus.OK).body(notifications);
         } else {
