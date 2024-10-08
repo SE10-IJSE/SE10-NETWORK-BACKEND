@@ -2,7 +2,6 @@ package lk.ijse.SE10_NETWORK_BACKEND.service.impl;
 
 import jakarta.mail.MessagingException;
 import lk.ijse.SE10_NETWORK_BACKEND.customObj.MailBody;
-import lk.ijse.SE10_NETWORK_BACKEND.customObj.OtpResponse;
 import lk.ijse.SE10_NETWORK_BACKEND.dto.ImageUpdateDTO;
 import lk.ijse.SE10_NETWORK_BACKEND.dto.UserDTO;
 import lk.ijse.SE10_NETWORK_BACKEND.dto.UserSearchDTO;
@@ -46,6 +45,8 @@ public class UserServiceIMPL implements UserService, UserDetailsService {
     @Autowired
     private EmailUtil emailUtil;
 
+    private Map<String, String> otpList = new HashMap<>();
+
     @Override
     public int saveUser(UserDTO userDTO) {
         boolean emailExists = userRepository.existsByEmail(userDTO.getEmail());
@@ -80,10 +81,8 @@ public class UserServiceIMPL implements UserService, UserDetailsService {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
         return VarList.Internal_Server_Error;
     }
-
 
     @Override
     public int updateUser(UserDTO userDTO) {
@@ -168,7 +167,6 @@ public class UserServiceIMPL implements UserService, UserDetailsService {
         return Collections.emptyList();
     }
 
-
     @Override
     public UserDTO loadUserDetailsByEmail(String email) {
         User user = userRepository.findByEmail(email).orElse(null);
@@ -240,11 +238,10 @@ public class UserServiceIMPL implements UserService, UserDetailsService {
     }
 
     @Override
-    public OtpResponse verifyUserEmail(String name, String email) throws MessagingException, IOException {
-        System.out.println(name.equals("null"));
+    public void verifyUserEmail(String name, String email) throws MessagingException, IOException {
         String subject = "Verify Your Email";
         String templateName = "EmailVerification";
-        if (name.equals("null")) {
+        if (name.isEmpty()) {
             User user = userRepository.findByEmail(email).orElse(null);
             if (user == null) {
                 throw new RuntimeException();
@@ -266,7 +263,7 @@ public class UserServiceIMPL implements UserService, UserDetailsService {
                         .replacements(map)
                         .build()
         );
-        return new OtpResponse(otp, email);
+        otpList.put(email, otp);
     }
 
     @Override
@@ -280,6 +277,17 @@ public class UserServiceIMPL implements UserService, UserDetailsService {
                 userRepository.save(user);
             }
         }
+    }
+
+    @Override
+    public boolean verifyOtp(String email, String otp) {
+        if (otpList.containsKey(email)) {
+            if (otpList.get(email).equals(otp)) {
+                otpList.remove(email);
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

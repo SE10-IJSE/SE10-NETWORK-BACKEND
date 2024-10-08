@@ -3,6 +3,8 @@ package lk.ijse.SE10_NETWORK_BACKEND.util;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lk.ijse.SE10_NETWORK_BACKEND.customObj.MailBody;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -17,6 +19,7 @@ import java.util.Random;
 
 @Component
 public class EmailUtil {
+    private static final Logger logger = LoggerFactory.getLogger(EmailUtil.class);
 
     @Autowired
     private JavaMailSender javaMailSender;
@@ -46,7 +49,7 @@ public class EmailUtil {
         helper.setSubject(mailBody.subject());
         helper.setText(htmlContent, true); // true indicates HTML
         javaMailSender.send(message);
-        System.out.println("HTML Mail Sent");
+        logger.info("HTML Mail Sent");
     }
 
     public Integer otpGenerator() {
