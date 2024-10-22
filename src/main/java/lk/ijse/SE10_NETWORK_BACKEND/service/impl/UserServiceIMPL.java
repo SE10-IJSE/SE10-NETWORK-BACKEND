@@ -2,16 +2,16 @@ package lk.ijse.SE10_NETWORK_BACKEND.service.impl;
 
 import jakarta.mail.MessagingException;
 import lk.ijse.SE10_NETWORK_BACKEND.customObj.MailBody;
-import lk.ijse.SE10_NETWORK_BACKEND.dto.ImageUpdateDTO;
-import lk.ijse.SE10_NETWORK_BACKEND.dto.UserDTO;
-import lk.ijse.SE10_NETWORK_BACKEND.dto.UserSearchDTO;
+import lk.ijse.SE10_NETWORK_BACKEND.dto.*;
 import lk.ijse.SE10_NETWORK_BACKEND.entity.User;
+import lk.ijse.SE10_NETWORK_BACKEND.exception.*;
 import lk.ijse.SE10_NETWORK_BACKEND.repository.UserRepository;
 import lk.ijse.SE10_NETWORK_BACKEND.service.UserService;
 import lk.ijse.SE10_NETWORK_BACKEND.util.EmailUtil;
 import lk.ijse.SE10_NETWORK_BACKEND.util.ImageUploadUtil;
 import lk.ijse.SE10_NETWORK_BACKEND.util.JwtUtil;
 import lk.ijse.SE10_NETWORK_BACKEND.util.VarList;
+import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -29,122 +29,104 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class UserServiceIMPL implements UserService, UserDetailsService {
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private ModelMapper modelMapper;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private JwtUtil jwtUtil;
-
-    @Autowired
-    private EmailUtil emailUtil;
-
-    private Map<String, String> otpList = new HashMap<>();
+    private final UserRepository userRepository;
+    private final ModelMapper modelMapper;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
+    private final EmailUtil emailUtil;
+    private final Map<String, String> otpList = new HashMap<>();
 
     @Override
-    public int saveUser(UserDTO userDTO) {
-        boolean emailExists = userRepository.existsByEmail(userDTO.getEmail());
-        User user = userRepository.findById(userDTO.getUserId()).orElse(null);
-
-        if ((user != null && !emailExists) || (user == null && emailExists)) {
-            return VarList.Not_Acceptable;
-        }
-
-        if (user == null) {
-            user = modelMapper.map(userDTO, User.class);
-        } else {
-            user.setName(userDTO.getName());
-            user.setBatch(userDTO.getBatch());
-            user.setDob(userDTO.getDob());
-            user.setStatus("Active");
-            user.setBio(userDTO.getBio());
-        }
-
-        user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
-        user.setRole("USER");
-        User savedUser = userRepository.save(user);
-
-        try {
-            if (userDTO.getProfilePic() != null) {
-                ImageUploadUtil.saveFile(savedUser.getUserId(), "profile", userDTO.getProfilePic());
+    public void saveUser(SignUpDTO userDTO) {
+        if (otpList.containsKey(userDTO.getEmail()) && otpList.get(userDTO.getEmail()).equals(userDTO.getOtp())) {
+            boolean emailExists = userRepository.existsByEmail(userDTO.getEmail());
+            User user = userRepository.findById(userDTO.getUserId()).orElse(null);
+            if ((user != null && !emailExists) || (user == null && emailExists)) {
+                throw new UserEmailMismatchException("User and email data are inconsistent.");
             }
-            if (userDTO.getCoverPic() != null) {
-                ImageUploadUtil.saveFile(savedUser.getUserId(), "cover", userDTO.getCoverPic());
-            }
-            return VarList.Created;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return VarList.Internal_Server_Error;
-    }
-
-    @Override
-    public int updateUser(UserDTO userDTO) {
-        User user = userRepository.findById(userDTO.getUserId()).orElse(null);
-
-        if (user != null) {
-            if (userDTO.getPassword() != null
-                    && passwordEncoder.matches(userDTO.getPassword(), user.getPassword())) {
-
-                if (!userDTO.getNewPassword().isEmpty()) {
-                    user.setPassword(passwordEncoder.encode(userDTO.getNewPassword()));
-                }
-                user.setName(userDTO.getName());
-                user.setDob(userDTO.getDob());
-                user.setEmail(userDTO.getEmail());
-                user.setBio(userDTO.getBio());
-                userRepository.save(user);
-                return VarList.OK;
+            if (user == null) {
+                user = modelMapper.map(userDTO, User.class);
             } else {
-                return VarList.Not_Acceptable;
+                user.setName(userDTO.getName());
+                user.setBatch(userDTO.getBatch());
+                user.setDob(userDTO.getDob());
+                user.setStatus("Active");
+                user.setBio(userDTO.getBio());
             }
-        }
-        return VarList.Not_Found;
+            user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
+            user.setRole("USER");
+            User savedUser;
+            try {
+                savedUser = userRepository.save(user);
+            } catch (Exception e) {
+                throw new DataPersistFailedException("Failed to save user data.");
+            }
+            try {
+                if (userDTO.getProfilePic() != null) {
+                    ImageUploadUtil.saveFile(savedUser.getUserId(), "profile", userDTO.getProfilePic());
+                }
+                if (userDTO.getCoverPic() != null) {
+                    ImageUploadUtil.saveFile(savedUser.getUserId(), "cover", userDTO.getCoverPic());
+                }
+            } catch (IOException e) {
+                throw new DataPersistFailedException("Failed to upload user images.");
+            }
+        } else throw new InvalidOtpException("Invalid OTP.");
     }
-
     @Override
-    public boolean deleteUser(Long id) throws MessagingException, IOException {
-        User user = userRepository.findById(id).orElse(null);
-
-        if (user != null) {
-            user.setStatus("Suspended");
-            userRepository.save(user);
-            Map<String, String> map = new HashMap<>();
-            map.put("username", user.getName());
-            emailUtil.sendHtmlMessage(
-                    MailBody.builder()
-                            .templateName("AccountDeactivation")
-                            .to(user.getEmail())
-                            .subject("Account Deactivation")
-                            .replacements(map)
-                            .build()
-            );
-            return true;
-        }
-        return false;
+    public void updateUser(UserDTO userDTO, String token) {
+        if (userDTO.getEmail().equals(jwtUtil.getUsernameFromToken(token))) {
+            User user = userRepository.findById(userDTO.getUserId()).orElse(null);
+            if (user != null) {
+                if (userDTO.getPassword() != null
+                        && passwordEncoder.matches(userDTO.getPassword(), user.getPassword())) {
+                    if (!userDTO.getNewPassword().isEmpty()) {
+                        user.setPassword(passwordEncoder.encode(userDTO.getNewPassword()));
+                    }
+                    user.setName(userDTO.getName());
+                    user.setDob(userDTO.getDob());
+                    user.setEmail(userDTO.getEmail());
+                    user.setBio(userDTO.getBio());
+                    userRepository.save(user);
+                } else {
+                    throw new InvalidPasswordException("Password does not match.");
+                }
+            } else throw new UserNotFoundException("User not found.");
+        } else throw new UserEmailMismatchException("User email mismatch.");
     }
-
+    @Override
+    public void deleteUser(Long id, String token) throws MessagingException, IOException {
+        User user = userRepository.findById(id).orElse(null);
+        if (user != null) {
+            if (user.getEmail().equals(jwtUtil.getUsernameFromToken(token))) {
+                user.setStatus("Suspended");
+                userRepository.save(user);
+                Map<String, String> map = new HashMap<>();
+                map.put("username", user.getName());
+                emailUtil.sendHtmlMessage(
+                        MailBody.builder()
+                                .templateName("AccountDeactivation")
+                                .to(user.getEmail())
+                                .subject("Account Deactivation")
+                                .replacements(map)
+                                .build()
+                );
+            } else throw new UserEmailMismatchException("User email mismatch.");
+        } else throw new UserNotFoundException("User not found.");
+    }
     @Override
     public UserDTO getUserByEmail(String email) {
         User user = userRepository.findByEmail(email).orElse(null);
-
         if (user != null) {
             UserDTO dto = modelMapper.map(user, UserDTO.class);
             return ImageUploadUtil.getUserImages(dto);
-        }
-        return null;
+        } else throw new UserNotFoundException("User not found.");
     }
-
     @Override
     public List<String> getUserNamesWithBirthdaysToday() {
         List<User> users = userRepository.findUsersWithBirthday().orElse(null);
-
         if (users != null) {
             List<String> list = new ArrayList<>();
             users.forEach(user -> list.add(user.getName()));
@@ -152,11 +134,9 @@ public class UserServiceIMPL implements UserService, UserDetailsService {
         }
         return null;
     }
-
     @Override
     public List<UserSearchDTO> getUsersWithBirthdaysToday() {
         List<User> users = userRepository.findUsersWithBirthday().orElse(Collections.emptyList());
-
         if (!users.isEmpty()) {
             return users.stream().map(user -> {
                 UserSearchDTO dto = modelMapper.map(user, UserSearchDTO.class);
@@ -166,7 +146,6 @@ public class UserServiceIMPL implements UserService, UserDetailsService {
         }
         return Collections.emptyList();
     }
-
     @Override
     public UserDTO loadUserDetailsByEmail(String email) {
         User user = userRepository.findByEmail(email).orElse(null);
@@ -175,37 +154,36 @@ public class UserServiceIMPL implements UserService, UserDetailsService {
         }
         return null;
     }
-
     @Override
-    public boolean updateUserImage(ImageUpdateDTO dto) {
+    public void updateUserImage(ImageUpdateDTO dto, String token) {
         User user = userRepository.findByEmail(dto.getEmail()).orElse(null);
-
         if (user != null) {
-            try {
-                ImageUploadUtil.saveFile(user.getUserId(), dto.getType(), dto.getImage());
-                return true;
-            } catch (IOException e) {
-                e.printStackTrace();
+            if (!user.getEmail().equals(jwtUtil.getUsernameFromToken(token))) {
+                throw new UserEmailMismatchException("User email mismatch.");
+            } else {
+                try {
+                    ImageUploadUtil.saveFile(user.getUserId(), dto.getType(), dto.getImage());
+                } catch (IOException e) {
+                    throw new DataPersistFailedException("Failed to update user image.");
+                }
             }
-        }
-        return false;
+        } else throw new UserNotFoundException("User not found.");
     }
-
     @Override
-    public boolean deleteUserImage(ImageUpdateDTO dto) {
+    public void deleteUserImage(ImageUpdateDTO dto, String token) {
         User user = userRepository.findByEmail(dto.getEmail()).orElse(null);
-
         if (user != null) {
-            try {
-                ImageUploadUtil.deleteFile(user.getUserId(), dto.getType());
-                return true;
-            } catch (IOException e) {
-                e.printStackTrace();
+            if (!user.getEmail().equals(jwtUtil.getUsernameFromToken(token))) {
+                throw new UserEmailMismatchException("User email mismatch.");
+            } else {
+                try {
+                    ImageUploadUtil.deleteFile(user.getUserId(), dto.getType());
+                } catch (IOException e) {
+                    throw new DataPersistFailedException("Failed to delete user image.");
+                }
             }
-        }
-        return false;
+        } else throw new UserNotFoundException("User not found.");
     }
-
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         User user = userRepository.findByEmail(email).orElse(null);
@@ -214,12 +192,10 @@ public class UserServiceIMPL implements UserService, UserDetailsService {
         }
         return new org.springframework.security.core.userdetails.User(user.getEmail(), user.getPassword(), getAuthorities(user));
     }
-
     @Override
     public List<UserSearchDTO> findUsersByNameOrNameLike(String name, int page) {
         Pageable pageable = PageRequest.of(page, 10);
         Page<User> users = userRepository.findUsersByNameOrNameLike(name, pageable);
-
         if (!users.isEmpty()) {
             return users.stream().map(user -> {
                 UserSearchDTO dto = modelMapper.map(user, UserSearchDTO.class);
@@ -229,14 +205,12 @@ public class UserServiceIMPL implements UserService, UserDetailsService {
         }
         return null;
     }
-
     @Override
     public String getProfileImg(String token) {
         String username = jwtUtil.getUsernameFromToken(token);
         User user = userRepository.findByEmail(username).orElse(null);
         return ImageUploadUtil.getProfileImage(user.getUserId());
     }
-
     @Override
     public void verifyUserEmail(String name, String email) throws MessagingException, IOException {
         String subject = "Verify Your Email";
@@ -244,7 +218,7 @@ public class UserServiceIMPL implements UserService, UserDetailsService {
         if (name.isEmpty()) {
             User user = userRepository.findByEmail(email).orElse(null);
             if (user == null) {
-                throw new RuntimeException();
+                throw new UserNotFoundException("User not found.");
             } else {
                 name = user.getName();
                 subject = "Password Reset Request";
@@ -265,31 +239,29 @@ public class UserServiceIMPL implements UserService, UserDetailsService {
         );
         otpList.put(email, otp);
     }
-
     @Override
-    public void updatePassword(String email, String password) {
-        if (!userRepository.existsByEmail(email)) {
-            throw new RuntimeException("User with email " + email + " does not exist.");
-        } else {
-            User user = userRepository.findByEmail(email).orElse(null);
-            if (user != null) {
-                user.setPassword(passwordEncoder.encode(password));
-                userRepository.save(user);
+    public void updatePassword(UpdatePasswordDTO dto) {
+        if (otpList.containsKey(dto.getEmail()) && otpList.get(dto.getEmail()).equals(dto.getOtp())) {
+            if (!userRepository.existsByEmail(dto.getEmail())) {
+                throw new UserNotFoundException("User with email " + dto.getEmail() + " does not exist.");
+            } else {
+                User user = userRepository.findByEmail(dto.getEmail()).orElse(null);
+                if (user != null) {
+                    user.setPassword(passwordEncoder.encode(dto.getNewPassword()));
+                    userRepository.save(user);
+                }
             }
-        }
+        } else throw new InvalidOtpException("Invalid OTP.");
     }
-
     @Override
-    public boolean verifyOtp(String email, String otp) {
-        if (otpList.containsKey(email)) {
-            if (otpList.get(email).equals(otp)) {
-                otpList.remove(email);
-                return true;
-            }
+    public UserDTO getUserByUserEmail(String email) {
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user != null) {
+            UserDTO dto = modelMapper.map(user, UserDTO.class);
+            return ImageUploadUtil.getUserImages(dto);
         }
-        return false;
+        return null;
     }
-
     /**
      * Retrieves the authorities (roles) for a given user.
      * This method creates a set of granted authorities based on the user's role.

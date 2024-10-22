@@ -153,6 +153,33 @@ public class PostController {
     }
 
     /**
+     * Retrieves all unapproved posts of a user with pagination.
+     *
+     * @param pageNo  The page number to retrieve.
+     * @param postCount The number of posts per page.
+     * @param email The email of the user
+     * @param token The JWT token identifying the user.
+     * @return ResponseEntity with the list of posts or a 404 status if none are found.
+     */
+
+    @GetMapping("/userPosts")
+    public ResponseEntity<List<PostDTO>> getUserPostsByEmail(
+            @RequestParam("pageNo") Integer pageNo,
+            @RequestParam("postCount") Integer postCount,
+            @RequestParam("email") String email,
+            @RequestHeader("Authorization") String token) {
+        List<PostDTO> posts = postService.getAllPostsOfUserByEmail(pageNo, postCount, email,token);
+
+        if (posts != null) {
+            logger.info("Retrieved {} posts for user with email: {}", posts.size(),email);
+            return ResponseEntity.status(HttpStatus.OK).body(posts);
+        } else {
+            logger.warn("No posts found for user with email: {}", email);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
+
+    /**
      * Retrieves all unapproved posts with pagination.
      *
      * @param pageNo    The page number to retrieve.

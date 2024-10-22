@@ -19,4 +19,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     @Query("select p from Post p WHERE p.status='PENDING' AND p.user.email!=:email")
     Page<Post> findUnapprovedPosts(@Param("email") String email, Pageable pageable);
+
+    @Query("select p from Post p WHERE p.user.email=:email")
+    Page<Post> findByEmail(@Param("email") String email, Pageable pageable);
 }

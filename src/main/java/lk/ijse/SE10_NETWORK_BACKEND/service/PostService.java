@@ -15,4 +15,5 @@ public interface PostService {
     List<PostDTO> getAllPostsOfUser(Integer pageNo, Integer postCount, String token);
     List<PostDTO> getUnapprovedPosts(Integer pageNo, Integer postCount, String token);
     boolean deletePost(Long postId);
+    List<PostDTO> getAllPostsOfUserByEmail(Integer pageNo, Integer postCount, String email,String token );
 }

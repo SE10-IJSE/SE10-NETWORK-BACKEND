@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 @Data
 public class UserSearchDTO {
     private String name;
+    private String email;
     private String batch;
     private String profileImg;
 }
