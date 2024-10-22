@@ -184,6 +184,35 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+    public List<PostDTO> getAllPostsOfUserByEmail(Integer pageNo, Integer postCount, String email,String token) {
+
+        String username = jwtUtil.getUsernameFromToken(token.substring(7));
+        User user = userRepository.findByEmail(username).orElse(null);
+
+        Pageable pageable  = PageRequest.of(pageNo, postCount);
+        Page<Post>  postsPage  = postRepository.findByEmail(email, pageable);
+
+        if (!postsPage.isEmpty()) {
+            return postsPage.getContent().stream()
+                    .map(post -> {
+                        PostDTO dto = modelMapper.map(post, PostDTO.class);
+                        dto.setUserName(post.getUser().getName());
+                        dto.setProfileImg(ImageUploadUtil.getProfileImage(post.getUser().getUserId()));
+                        dto.setInspirationCount(post.getInspires().size());
+                        dto.setVerifiedBy(post.getVerifiedBy() != null ? post.getVerifiedBy().getName() : null);
+
+                        boolean isInspired = post.getInspires().stream()
+                                .anyMatch(inspire -> inspire.getUser().getEmail().equals(user.getEmail()));
+
+                        dto.setInspired(isInspired);
+                        return dto;
+                    })
+                    .collect(Collectors.toList());
+        }
+        return null;
+    }
+
+    @Override
     public boolean deletePost(Long postId) {
         if (!postRepository.existsById(postId)) {
             return false;

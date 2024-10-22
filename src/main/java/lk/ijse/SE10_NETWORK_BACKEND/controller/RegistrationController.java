@@ -2,13 +2,17 @@ package lk.ijse.SE10_NETWORK_BACKEND.controller;
 
 import jakarta.mail.MessagingException;
 import lk.ijse.SE10_NETWORK_BACKEND.customObj.OtpResponse;
-import lk.ijse.SE10_NETWORK_BACKEND.dto.AuthDTO;
-import lk.ijse.SE10_NETWORK_BACKEND.dto.ResponseDTO;
-import lk.ijse.SE10_NETWORK_BACKEND.dto.SignInDTO;
-import lk.ijse.SE10_NETWORK_BACKEND.dto.UserDTO;
+import lk.ijse.SE10_NETWORK_BACKEND.dto.*;
+import lk.ijse.SE10_NETWORK_BACKEND.exception.DataPersistFailedException;
+import lk.ijse.SE10_NETWORK_BACKEND.exception.InvalidOtpException;
+import lk.ijse.SE10_NETWORK_BACKEND.exception.UserEmailMismatchException;
+import lk.ijse.SE10_NETWORK_BACKEND.exception.UserNotFoundException;
 import lk.ijse.SE10_NETWORK_BACKEND.service.UserService;
 import lk.ijse.SE10_NETWORK_BACKEND.util.JwtUtil;
 import lk.ijse.SE10_NETWORK_BACKEND.util.VarList;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,19 +27,13 @@ import java.io.IOException;
 @RestController
 @RequestMapping("/api/v1/auth")
 @CrossOrigin("*")
+@RequiredArgsConstructor
+@Slf4j
 public class RegistrationController {
-
-    @Autowired
-    private AuthenticationManager authenticationManager;
-
-    @Autowired
-    private UserService userService;
-
-    @Autowired
-    private JwtUtil jwtUtil;
-
-    private static final Logger logger = LoggerFactory.getLogger(RegistrationController.class);
-
+    private final AuthenticationManager authenticationManager;
+    private final UserService userService;
+    private final JwtUtil jwtUtil;
+    private final ModelMapper modelMapper;
     /**
      * Handles user sign-in requests.
      *
@@ -48,32 +46,28 @@ public class RegistrationController {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(dto.getEmail(), dto.getPassword()));
         } catch (Exception e) {
-            logger.error("Sign-in failed for email: {}. Error: {}", dto.getEmail(), e.getMessage());
+            log.error("Sign-in failed for email: {}. Error: {}", dto.getEmail(), e.getMessage());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new ResponseDTO(VarList.Unauthorized, "Invalid Credentials", e.getMessage()));
         }
-
         UserDTO loadedUser = userService.loadUserDetailsByEmail(dto.getEmail());
         if (loadedUser == null) {
-            logger.warn("User not found for email: {}", dto.getEmail());
+            log.warn("User not found for email: {}", dto.getEmail());
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(new ResponseDTO(VarList.Conflict, "User not found", null));
         }
-
         String token = jwtUtil.generateToken(loadedUser);
         if (token == null || token.isEmpty()) {
-            logger.warn("Failed to generate token for email: {}", dto.getEmail());
+            log.warn("Failed to generate token for email: {}", dto.getEmail());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ResponseDTO(VarList.Conflict, "Token generation failed", null));
         }
-
         AuthDTO authDTO = new AuthDTO();
         authDTO.setEmail(loadedUser.getEmail());
         authDTO.setToken(token);
-        logger.info("Sign-in successful for email: {}", dto.getEmail());
+        log.info("Sign-in successful for email: {}", dto.getEmail());
         return ResponseEntity.ok(new ResponseDTO(VarList.Created, "Sign-in successful", authDTO));
     }
-
     /**
      * Handles user sign-up requests.
      *
@@ -81,37 +75,55 @@ public class RegistrationController {
      * @return ResponseEntity with a ResponseDTO indicating the result of the sign-up attempt.
      */
     @PostMapping("/sign_up")
-    public ResponseEntity<ResponseDTO> signUp(@ModelAttribute UserDTO userDTO) {
+    public ResponseEntity<ResponseDTO> signUp(@ModelAttribute SignUpDTO userDTO) {
         try {
-            int result = userService.saveUser(userDTO);
-            switch (result) {
-                case VarList.Created -> {
-                    String token = jwtUtil.generateToken(userDTO);
-                    AuthDTO authDTO = new AuthDTO();
-                    authDTO.setEmail(userDTO.getEmail());
-                    authDTO.setToken(token);
-                    logger.info("Sign-up successful for email: {}", userDTO.getEmail());
-                    return ResponseEntity.status(HttpStatus.CREATED)
-                            .body(new ResponseDTO(VarList.Created, "User created successfully", authDTO));
-                }
-                case VarList.Not_Acceptable -> {
-                    logger.warn("Email already in use for email: {}", userDTO.getEmail());
-                    return ResponseEntity.status(HttpStatus.CONFLICT)
-                            .body(new ResponseDTO(VarList.Not_Acceptable, "Email already in use", null));
-                }
-                default -> {
-                    logger.error("Sign-up error for email: {}", userDTO.getEmail());
-                    return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
-                            .body(new ResponseDTO(VarList.Bad_Gateway, "Sign-up failed", null));
-                }
-            }
-        } catch (Exception e) {
-            logger.error("Sign-up exception for email: {}. Error: {}", userDTO.getEmail(), e.getMessage());
+            userService.saveUser(userDTO);
+            String token = jwtUtil.generateToken(modelMapper.map(userDTO, UserDTO.class));
+            AuthDTO authDTO = new AuthDTO();
+            authDTO.setEmail(userDTO.getEmail());
+            authDTO.setToken(token);
+            log.info("Sign-up successful for email: {}", userDTO.getEmail());
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(new ResponseDTO(VarList.Created, "User created successfully", authDTO));
+        } catch (InvalidOtpException e) {
+            log.warn("Invalid OTP for email: {}", userDTO.getEmail());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ResponseDTO(VarList.Bad_Request, "Invalid OTP", null));
+        } catch (UserEmailMismatchException e) {
+            log.warn("User and email data are inconsistent.");
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(new ResponseDTO(VarList.Conflict, "Email mismatch", null));
+        } catch (DataPersistFailedException e) {
+            log.error("Error during user registration. Error: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ResponseDTO(VarList.Internal_Server_Error, "Sign-up failed", null));
+                    .body(new ResponseDTO(VarList.Internal_Server_Error, "User registration failed", null));
         }
     }
-
+    /**
+     * Updates the password for a user identified by their email.
+     * This method verifies the provided OTP and updates the user's password if the OTP is valid.
+     *
+     * @param dto UpdatePasswordDTO containing the email, OTP, and new password.
+     * @return ResponseEntity indicating the success or failure of the password update attempt.
+     */
+    @PutMapping("/update_password")
+    public ResponseEntity<Void> updatePassword(@RequestBody UpdatePasswordDTO dto) {
+        try {
+            log.info("Starting password update for email: {}", dto.getEmail());
+            userService.updatePassword(dto);
+            log.info("Password updated successfully for email: {}", dto.getEmail());
+            return ResponseEntity.noContent().build();
+        } catch (InvalidOtpException e) {
+            log.warn("Invalid OTP for email: {}", dto.getEmail());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        } catch (UserNotFoundException e) {
+            log.warn("User not found for email: {}", dto.getEmail());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        } catch (Exception e) {
+            log.error("Error updating password for email: {} , Error: {}", dto.getEmail(), e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
     /**
      * Verifies the email address of a user.
      *
@@ -120,66 +132,19 @@ public class RegistrationController {
      * @return ResponseEntity with an OtpResponse indicating the result of the email verification attempt.
      */
     @PostMapping("/request_otp")
-    public ResponseEntity<OtpResponse> verifyEmail(
+    public ResponseEntity<OtpResponse> requestOtp(
             @RequestParam("name") String name,
             @RequestParam("email") String email) {
         try {
-            logger.info("Starting email verification process for user: {}, email: {}", name, email);
-
+            log.info("Starting email verification process for user: {}, email: {}", name, email);
             userService.verifyUserEmail(name, email);
-
-            logger.info("Email verification successful for user: {}, email: {}", name, email);
+            log.info("Email verification successful for user: {}, email: {}", name, email);
             return ResponseEntity.ok().build();
+        } catch (UserNotFoundException e) {
+            log.warn("User not found for email: {}", email);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         } catch (MessagingException | IOException e) {
-            logger.error("Error during email verification for user: {}, email: {}. Error: {}", name, email, e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
-    /**
-     * Verifies the OTP sent to the user's email address.
-     *
-     * @param email The email address of the user.
-     * @param otp   The OTP to be verified.
-     * @return ResponseEntity with a ResponseDTO indicating the result of the OTP verification attempt.
-     */
-    @GetMapping("/verify_otp")
-    public ResponseEntity<Void> verifyOtp(
-            @RequestParam("email") String email,
-            @RequestParam("otp") String otp) {
-        try {
-            boolean result = userService.verifyOtp(email, otp);
-            if (result) {
-                return ResponseEntity.ok().build();
-            } else {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-            }
-        } catch (Exception e) {
-            logger.error("Error during OTP verification. Error: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
-    /**
-     * Updates the password for a user identified by their email.
-     *
-     * @param email    The email of the user whose password is to be updated.
-     * @param password The new password to be set.
-     * @return ResponseEntity indicating the success or failure of the password update attempt.
-     */
-    @PutMapping("/update_password")
-    public ResponseEntity<Void> updatePassword(
-            @RequestParam("email") String email,
-            @RequestParam("password") String password) {
-        try {
-            logger.info("Starting password update for email: {}", email);
-
-            userService.updatePassword(email, password);
-
-            logger.info("Password updated successfully for email: {}", email);
-            return ResponseEntity.noContent().build();
-        } catch (RuntimeException e) {
-            logger.error("Error updating password for email: {} , Error: {}", email, e.getMessage());
+            log.error("Error during email verification for user: {}, email: {}. Error: {}", name, email, e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

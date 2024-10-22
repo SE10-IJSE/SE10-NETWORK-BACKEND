@@ -1,9 +1,7 @@
 package lk.ijse.SE10_NETWORK_BACKEND.service;
 
 import jakarta.mail.MessagingException;
-import lk.ijse.SE10_NETWORK_BACKEND.dto.ImageUpdateDTO;
-import lk.ijse.SE10_NETWORK_BACKEND.dto.UserDTO;
-import lk.ijse.SE10_NETWORK_BACKEND.dto.UserSearchDTO;
+import lk.ijse.SE10_NETWORK_BACKEND.dto.*;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -11,18 +9,18 @@ import java.util.List;
 
 @Service
 public interface UserService {
-    int saveUser(UserDTO userDTO);
-    int updateUser(UserDTO userDTO);
-    boolean deleteUser(Long id) throws MessagingException, IOException;
+    void saveUser(SignUpDTO userDTO);
+    void updateUser(UserDTO userDTO, String token);
+    void deleteUser(Long id, String token) throws MessagingException, IOException;
     UserDTO getUserByEmail(String email);
     List<String> getUserNamesWithBirthdaysToday();
     List<UserSearchDTO> getUsersWithBirthdaysToday();
     UserDTO loadUserDetailsByEmail(String email);
-    boolean updateUserImage(ImageUpdateDTO dto);
-    boolean deleteUserImage(ImageUpdateDTO dto);
+    void updateUserImage(ImageUpdateDTO dto, String token);
+    void deleteUserImage(ImageUpdateDTO dto, String token);
     List<UserSearchDTO> findUsersByNameOrNameLike(String name, int page);
     String getProfileImg(String token);
     void verifyUserEmail(String name, String email) throws MessagingException, IOException;
-    void updatePassword(String email, String password);
-    boolean verifyOtp(String email, String otp);
+    void updatePassword(UpdatePasswordDTO dto);
+    UserDTO getUserByUserEmail(String email);
 }

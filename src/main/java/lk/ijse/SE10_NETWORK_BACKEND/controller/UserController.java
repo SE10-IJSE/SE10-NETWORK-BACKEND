@@ -2,9 +2,14 @@ package lk.ijse.SE10_NETWORK_BACKEND.controller;
 
 import jakarta.mail.MessagingException;
 import lk.ijse.SE10_NETWORK_BACKEND.dto.*;
+import lk.ijse.SE10_NETWORK_BACKEND.exception.InvalidPasswordException;
+import lk.ijse.SE10_NETWORK_BACKEND.exception.UserEmailMismatchException;
+import lk.ijse.SE10_NETWORK_BACKEND.exception.UserNotFoundException;
 import lk.ijse.SE10_NETWORK_BACKEND.service.UserService;
 import lk.ijse.SE10_NETWORK_BACKEND.util.JwtUtil;
 import lk.ijse.SE10_NETWORK_BACKEND.util.VarList;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,16 +23,11 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/user")
 @CrossOrigin("*")
+@RequiredArgsConstructor
+@Slf4j
 public class UserController {
-
-    @Autowired
-    private UserService userService;
-
-    @Autowired
-    private JwtUtil jwtUtil;
-
-    private static final Logger logger = LoggerFactory.getLogger(UserController.class);
-
+    private final UserService userService;
+    private final JwtUtil jwtUtil;
     /**
      * Updates an existing user with the provided details.
      *
@@ -35,83 +35,36 @@ public class UserController {
      * @return ResponseEntity with status and message indicating the result of the update operation.
      */
     @PutMapping
-    public ResponseEntity<ResponseDTO> updateUser(@RequestBody UserDTO userDTO) {
-        logger.info("Attempting to update user with email: {}", userDTO.getEmail());
-
+    public ResponseEntity<ResponseDTO> updateUser(
+            @RequestBody UserDTO userDTO,
+            @RequestHeader("Authorization") String jwt) {
+        log.info("Attempting to update user with email: {}", userDTO.getEmail());
         try {
-            int result = userService.updateUser(userDTO);
-            switch (result) {
-                case VarList.OK -> {
-                    String token = jwtUtil.generateToken(userDTO);
-                    AuthDTO authDTO = new AuthDTO();
-                    authDTO.setEmail(userDTO.getEmail());
-                    authDTO.setToken(token);
-                    logger.info("User successfully updated with email: {}", userDTO.getEmail());
-                    return ResponseEntity.ok(new ResponseDTO(VarList.OK, "User updated successfully", authDTO));
-                }
-                case VarList.Not_Acceptable -> {
-                    logger.warn("Update failed: Password mismatch for email: {}", userDTO.getEmail());
-                    return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE)
-                            .body(new ResponseDTO(VarList.Not_Acceptable, "Password does not match", null));
-                }
-                case VarList.Not_Found -> {
-                    logger.warn("User not found with ID: {}", userDTO.getUserId());
-                    return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                            .body(new ResponseDTO(VarList.Not_Found, "User does not exist", null));
-                }
-                default -> {
-                    logger.error("Unexpected error during update for email: {}", userDTO.getEmail());
-                    return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
-                            .body(new ResponseDTO(VarList.Bad_Gateway, "An error occurred", null));
-                }
-            }
+            userService.updateUser(userDTO, jwt.substring(7));
+            String token = jwtUtil.generateToken(userDTO);
+            AuthDTO authDTO = new AuthDTO();
+            authDTO.setEmail(userDTO.getEmail());
+            authDTO.setToken(token);
+            log.info("User successfully updated with email: {}", userDTO.getEmail());
+            return ResponseEntity.ok(new ResponseDTO(VarList.OK, "User updated successfully", authDTO));
+        } catch (UserEmailMismatchException e) {
+            log.warn("Update failed: Email mismatch for email: {}", userDTO.getEmail());
+            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE)
+                    .body(new ResponseDTO(VarList.Not_Acceptable, "Email does not match", null));
+        } catch (UserNotFoundException e) {
+            log.warn("User not found with email: {}", userDTO.getEmail());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ResponseDTO(VarList.Not_Found, "User does not exist", null));
+        } catch (InvalidPasswordException e) {
+            log.warn("Update failed: Password mismatch for email: {}", userDTO.getEmail());
+            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE)
+                    .body(new ResponseDTO(VarList.Not_Acceptable, "Password does not match", null));
         } catch (Exception e) {
-            logger.error("Update failed for email: {}", userDTO.getEmail(), e);
+            log.error("Update failed for email: {}", userDTO.getEmail(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ResponseDTO(VarList.Internal_Server_Error, "Internal server error", null));
         }
     }
-
-    /**
-     * Updates the user's image (profile or cover).
-     *
-     * @param dto The data transfer object containing image update details.
-     * @return ResponseEntity indicating whether the image update was successful.
-     */
-    @PutMapping("/image")
-    public ResponseEntity<Boolean> updateUserImage(@ModelAttribute ImageUpdateDTO dto) {
-        logger.info("Updating {} image for user with email: {}", dto.getType(), dto.getEmail());
-
-        boolean updated = userService.updateUserImage(dto);
-        if (updated) {
-            logger.info("{} image updated successfully for email: {}", dto.getType(), dto.getEmail());
-            return ResponseEntity.ok(true);
-        } else {
-            logger.warn("Failed to update {} image for email: {}", dto.getType(), dto.getEmail());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(false);
-        }
-    }
-
-    /**
-     * Deletes the user's image (profile or cover).
-     *
-     * @param dto The data transfer object containing image delete details.
-     * @return ResponseEntity indicating whether the image deletion was successful.
-     */
-    @DeleteMapping("/image")
-    public ResponseEntity<Boolean> deleteUserImage(@RequestBody ImageUpdateDTO dto) {
-        logger.info("Deleting {} image for user with email: {}", dto.getType(), dto.getEmail());
-
-        boolean deleted = userService.deleteUserImage(dto);
-        if (deleted) {
-            logger.info("{} image deleted successfully for email: {}", dto.getType(), dto.getEmail());
-            return ResponseEntity.ok(true);
-        } else {
-            logger.warn("Failed to delete {} image for email: {}", dto.getType(), dto.getEmail());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(false);
-        }
-    }
-
     /**
      * Deletes a user by their ID.
      *
@@ -119,23 +72,26 @@ public class UserController {
      * @return ResponseEntity indicating the result of the delete operation.
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteUser(@PathVariable("id") Long id) {
-        logger.info("Request to delete user with ID: {}", id);
-
+    public ResponseEntity<String> deleteUser(
+            @PathVariable("id") Long id,
+            @RequestHeader("Authorization") String jwt) {
         try {
-            boolean deleted = userService.deleteUser(id);
-            if (deleted) {
-                logger.info("User with ID: {} deleted successfully", id);
-                return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
-            } else {
-                logger.warn("User with ID: {} not found", id);
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
-            }
-        } catch (MessagingException | IOException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            // TODO: Implement JWT token validation so only the user can delete their own account
+            log.info("Request to delete user with ID: {}", id);
+            userService.deleteUser(id, jwt.substring(7));
+            log.info("User with ID: {} deleted successfully", id);
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+        } catch (UserEmailMismatchException e) {
+            log.warn("Email mismatch for user with ID: {}", id);
+            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Email mismatch");
+        } catch (UserNotFoundException e) {
+            log.warn("User with ID: {} not found", id);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+        } catch (Exception e) {
+            log.error("Failed to delete user with ID: {}", id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to delete user");
         }
     }
-
     /**
      * Retrieves a user by email using the JWT token provided in the Authorization header.
      *
@@ -144,78 +100,33 @@ public class UserController {
      */
     @GetMapping
     public ResponseEntity<UserDTO> getUserByEmail(@RequestHeader("Authorization") String token) {
-        logger.info("Retrieving user information using JWT token");
-
+        log.info("Retrieving user information using JWT token");
         String email = jwtUtil.getUsernameFromToken(token.substring(7));
         UserDTO dto = userService.getUserByEmail(email);
-
         if (dto != null) {
-            logger.info("User with email: {} retrieved successfully", email);
+            log.info("User with email: {} retrieved successfully", email);
             return ResponseEntity.ok(dto);
         } else {
-            logger.warn("User with email: {} not found", email);
+            log.warn("User with email: {} not found", email);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
     }
-
-    /**
-     * Retrieves names of users with birthdays today.
-     *
-     * @return ResponseEntity containing a list of names if users are found; otherwise, a NOT FOUND status.
-     */
-    @GetMapping("/birthday/names")
-    public ResponseEntity<List<String>> getUserNamesWithBirthdays() {
-        logger.info("Fetching names of users with birthdays today");
-
-        List<String> usersList = userService.getUserNamesWithBirthdaysToday();
-
-        if (usersList != null && !usersList.isEmpty()) {
-            logger.info("Found {} users with birthdays today", usersList.size());
-            return ResponseEntity.ok(usersList);
-        } else {
-            logger.warn("No users with birthdays today");
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-        }
-    }
-
-    /**
-     * Retrieves detailed information of users with birthdays today.
-     *
-     * @return ResponseEntity containing a list of UserSearchDTO objects if users are found; otherwise, a NOT FOUND status.
-     */
-    @GetMapping("/birthday/data")
-    public ResponseEntity<List<UserSearchDTO>> getUsersWithBirthdays() {
-        logger.info("Fetching detailed information for users with birthdays today");
-
-        List<UserSearchDTO> list = userService.getUsersWithBirthdaysToday();
-
-        if (list != null && !list.isEmpty()) {
-            logger.info("Found {} users with birthdays today", list.size());
-            return ResponseEntity.ok(list);
-        } else {
-            logger.warn("No users with birthdays today");
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-        }
-    }
-
     /**
      * Searches for users by name with pagination.
      *
-     * @param name The name or partial name to search for.
+     * @param name   The name or partial name to search for.
      * @param pageNo The page number for pagination.
      * @return ResponseEntity containing a list of UserSearchDTO objects if users are found; otherwise, a NOT FOUND status.
      */
     @GetMapping("/search")
     public ResponseEntity<List<UserSearchDTO>> searchUser(@RequestParam("name") String name, @RequestParam("pageNo") int pageNo) {
         List<UserSearchDTO> users = userService.findUsersByNameOrNameLike(name, pageNo);
-
         if (users != null && !users.isEmpty()) {
             return ResponseEntity.ok(users);
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
     }
-
     /**
      * Retrieves the profile image of the authenticated user based on the provided JWT token.
      *
@@ -227,7 +138,111 @@ public class UserController {
         String profileImgUrl = userService.getProfileImg(token.substring(7));
         return ResponseEntity.status(HttpStatus.OK).body(profileImgUrl);
     }
+    /**
+     * Updates the user's image (profile or cover).
+     *
+     * @param dto The data transfer object containing image update details.
+     * @return ResponseEntity indicating whether the image update was successful.
+     */
+    @PutMapping("/image")
+    public ResponseEntity<Boolean> updateUserImage(
+            @ModelAttribute ImageUpdateDTO dto,
+            @RequestHeader("Authorization") String token) {
+        try {
+            log.info("Updating {} image for user with email: {}", dto.getType(), dto.getEmail());
+            userService.updateUserImage(dto, token.substring(7));
+            log.info("{} image updated successfully for email: {}", dto.getType(), dto.getEmail());
+            return ResponseEntity.ok(true);
+        } catch (UserEmailMismatchException e) {
+            log.warn("Email mismatch for user with email: {}", dto.getEmail());
+            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body(false);
+        } catch (UserNotFoundException e) {
+            log.warn("User with email: {} not found", dto.getEmail());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(false);
+        } catch (Exception e) {
+            log.error("Failed to update {} image for email: {}", dto.getType(), dto.getEmail(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(false);
+        }
+    }
+    /**
+     * Deletes the user's image (profile or cover).
+     *
+     * @param dto The data transfer object containing image delete details.
+     * @return ResponseEntity indicating whether the image deletion was successful.
+     */
+    @DeleteMapping("/image")
+    public ResponseEntity<Boolean> deleteUserImage(
+            @RequestBody ImageUpdateDTO dto,
+            @RequestHeader("Authorization") String token) {
+        try {
+            log.info("Deleting {} image for user with email: {}", dto.getType(), dto.getEmail());
+            userService.deleteUserImage(dto, token.substring(7));
+            log.info("{} image deleted successfully for email: {}", dto.getType(), dto.getEmail());
+            return ResponseEntity.ok(true);
+        } catch (UserEmailMismatchException e) {
+            log.warn("Email mismatch for user with email: {}", dto.getEmail());
+            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body(false);
+        } catch (UserNotFoundException e) {
+            log.warn("User with email: {} not found", dto.getEmail());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(false);
+        } catch (Exception e) {
+            log.error("Failed to update {} image for email: {}", dto.getType(), dto.getEmail(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(false);
+        }
+    }
 
+    /**
+     *
+     * @param email The email of the user
+     * @return ResponseEntity containing the UserDTO if found, or a NOT FOUND status.
+     */
+    @GetMapping("/{email}")
+    public ResponseEntity<UserDTO> getUserByUserEmail(@PathVariable("email") String email) {
+        log.info("Retrieving user information using User name");
+        UserDTO dto = userService.getUserByUserEmail(email);
+        if (dto != null) {
+            log.info("User with email: {} retrieved successfully", email);
+            return ResponseEntity.ok(dto);
+        } else {
+            log.warn("User with email: {} not found", email);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
+    }
+
+    /**
+     * Retrieves names of users with birthdays today.
+     *
+     * @return ResponseEntity containing a list of names if users are found; otherwise, a NOT FOUND status.
+     */
+    @GetMapping("/birthday/names")
+    public ResponseEntity<List<String>> getUsernamesWithBirthdays() {
+        log.info("Fetching names of users with birthdays today");
+        List<String> usersList = userService.getUserNamesWithBirthdaysToday();
+        if (usersList != null && !usersList.isEmpty()) {
+            log.info("Found {} users with birthdays today", usersList.size());
+            return ResponseEntity.ok(usersList);
+        } else {
+            log.warn("No users with birthdays today");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
+    }
+    /**
+     * Retrieves detailed information of users with birthdays today.
+     *
+     * @return ResponseEntity containing a list of UserSearchDTO objects if users are found; otherwise, a NOT FOUND status.
+     */
+    @GetMapping("/birthday/data")
+    public ResponseEntity<List<UserSearchDTO>> getUsersWithBirthdays() {
+        log.info("Fetching detailed information for users with birthdays today");
+        List<UserSearchDTO> list = userService.getUsersWithBirthdaysToday();
+        if (list != null && !list.isEmpty()) {
+            log.info("Found {} users with birthdays today", list.size());
+            return ResponseEntity.ok(list);
+        } else {
+            log.warn("No users with birthdays today");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
+    }
     /**
      * Validates the JWT token received in the request header.
      *
@@ -236,12 +251,10 @@ public class UserController {
      */
     @GetMapping("/validate")
     public ResponseEntity<Boolean> validateUser(@RequestHeader("Authorization") String token) {
-        logger.info("Validating JWT token");
-
+        log.info("Validating JWT token");
         String jwtToken = token.substring(7); // Remove "Bearer " prefix
         String username = jwtUtil.getUsernameFromToken(jwtToken);
-        logger.debug("Extracted username from token: {}", username);
-
+        log.debug("Extracted username from token: {}", username);
         return ResponseEntity.ok(true);
     }
 }

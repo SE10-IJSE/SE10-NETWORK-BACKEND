@@ -15,43 +15,30 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class User {
-
     @Id
     private Long userId;
-
     @Column(nullable = false)
     private String name;
-
     @Column(nullable = false, unique = true)
     private String email;
-
     @Column(nullable = false)
     private String batch;
-
     @Column(nullable = false)
     private String password;
-
     private LocalDate dob;
-
     @Column(nullable = false)
     private String status = "Active";
-
     private String bio;
-
     @Column(nullable = false)
     private String role;
-
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
-
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Post> posts;
-
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Inspire> inspires;
 }
