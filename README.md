@@ -9,7 +9,7 @@
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <a href="https://github.com/SE10-IJSE/SE10-NETWORK-FRONTEND">
+  <a href="https://github.com/SE10-IJSE/SE10-NETWORK-BACKEND">
     <img src="/src/main/resources/assets/SE10-Readme-Logo.png" alt="SE10 Logo" width="90" height="90">
   </a>
 
@@ -18,7 +18,7 @@
   <p align="center">
    Welcome to the <Strong>SE10 NETWORK</Strong> backend repository! This backend service powers a social media platform built specifically for students of <Strong>IJSE</Strong> (Institute of Software Engineering). The platform allows students to interact by creating and sharing posts, viewing posts by others, and receiving personalized notifications for special events like birthdays and campus-related events.
     <br />
-    <a href="https://github.com/SE10-IJSE/SE10-NETWORK-BACKEND"><strong>Explore the docs »</strong></a>
+    <a href="https://github.com/SE10-IJSE/SE10-NETWORK-BACKEND/tree/main/src/main/java/lk/ijse/SE10_NETWORK_BACKEND"><strong>Explore the project »</strong></a>
     <br />
     <br />
     ·

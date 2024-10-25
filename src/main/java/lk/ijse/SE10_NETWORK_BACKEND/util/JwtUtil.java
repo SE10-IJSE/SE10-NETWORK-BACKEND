@@ -19,45 +19,34 @@ import java.util.function.Function;
 @Component
 @PropertySource(ignoreResourceNotFound = true, value = "classpath:otherprops.properties")
 public class JwtUtil {
-
     private static final long serialVersionUID = 234234523523L;
-
     public static final long JWT_TOKEN_VALIDITY = 24 * 60 * 60 * 12;
-
     @Value("${jwt.secret}")
     private String secretKey;
-
     public String getUsernameFromToken(String token){
         return getClaimFromToken(token, Claims::getSubject);
     }
-
     public String getRoleFromToken(String token){
         return getClaimFromToken(token, claims -> (String) claims.get("role"));
     }
-
-
     public <T> T getClaimFromToken(String token, Function<Claims, T> claimsResolver){
         final Claims claims = getAllClaimsFromToken(token);
         return claimsResolver.apply(claims);
     }
-
-
     public Claims getAllClaimsFromToken(String token){
-       return Jwts.parser()
-               .verifyWith(getKey())
-               .build()
-               .parseSignedClaims(token)
-               .getPayload();
+        return Jwts.parser()
+                .verifyWith(getKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
     }
-
     private SecretKey getKey() {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         return Keys.hmacShaKeyFor(keyBytes);
     }
-
     public String generateToken(UserDTO userDTO) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("role",userDTO.getRole());
+        claims.put("role", userDTO.getRole());
         return Jwts.builder()
                 .claims()
                 .add(claims)
@@ -68,11 +57,8 @@ public class JwtUtil {
                 .signWith(getKey())
                 .compact();
     }
-
     public boolean validateToken(String token, UserDetails userDetails) {
         final String userName = getUsernameFromToken(token);
         return (userName.equals(userDetails.getUsername()) );
     }
-
 }
-

@@ -17,19 +17,20 @@ import java.util.List;
 public class User {
     @Id
     private Long userId;
-    @Column(nullable = false)
+    @Column(length = 150, nullable = false)
     private String name;
     @Column(nullable = false, unique = true)
     private String email;
-    @Column(nullable = false)
+    @Column(length = 10, nullable = false)
     private String batch;
     @Column(nullable = false)
     private String password;
     private LocalDate dob;
-    @Column(nullable = false)
+    @Column(length = 10, nullable = false)
     private String status = "Active";
+    @Column(length = 30)
     private String bio;
-    @Column(nullable = false)
+    @Column(length = 20, nullable = false)
     private String role;
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

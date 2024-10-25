@@ -56,4 +56,3 @@ public class VarList {
     public static final int Not_Extended = 510;
     public static final int Network_Authentication_Required = 511;
 }
-

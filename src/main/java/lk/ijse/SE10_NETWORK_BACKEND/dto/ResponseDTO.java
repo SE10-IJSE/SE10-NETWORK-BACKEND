@@ -16,4 +16,3 @@ public class ResponseDTO implements Serializable {
     private String message;
     private Object data;
 }
-
