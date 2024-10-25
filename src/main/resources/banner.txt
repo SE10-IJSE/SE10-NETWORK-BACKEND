@@ -1,0 +1,15 @@
+${AnsiColor.BRIGHT_RED}
+  ____   _____   __    ____
+ / ___| | ____| /_ |  / __ \
+ \___ \ |  _|    | | | |  | |
+  ___) || |___   | | | |__| |
+ |____/ |_____|  |_|  \____/
+
+${AnsiColor.BRIGHT_GREEN} :: SE10 Network System    ::    ${AnsiColor.DEFAULT}(v1.0.0)
+${AnsiColor.BRIGHT_GREEN} :: Developed by           ::    ${AnsiColor.DEFAULT}SE10 Network Team
+${AnsiColor.BRIGHT_GREEN} :: Powered by Spring Boot ::    ${AnsiColor.DEFAULT}(v3.3.4)
+${AnsiColor.BRIGHT_YELLOW}
+ * * * * * * * * * * * * * * *
+    Welcome to SE10 Network
+ * * * * * * * * * * * * * * *
+ ${AnsiColor.DEFAULT}

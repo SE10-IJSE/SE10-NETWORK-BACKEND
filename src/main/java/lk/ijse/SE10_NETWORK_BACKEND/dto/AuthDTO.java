@@ -16,4 +16,3 @@ public class AuthDTO implements Serializable {
     private String token;
     private String refreshToken;
 }
-
