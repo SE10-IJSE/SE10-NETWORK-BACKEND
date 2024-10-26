@@ -19,9 +19,9 @@ public class Post {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long postId;
-    @Column(length = 280)
+    @Column(length = 280, nullable = false)
     private String content;
-    @Column(length = 10)
+    @Column(length = 10, nullable = false)
     private String status;
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

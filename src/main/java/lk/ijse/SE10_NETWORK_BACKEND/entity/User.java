@@ -25,10 +25,11 @@ public class User {
     private String batch;
     @Column(nullable = false)
     private String password;
+    @Column(nullable = false)
     private LocalDate dob;
     @Column(length = 10, nullable = false)
     private String status = "Active";
-    @Column(length = 30)
+    @Column(length = 30, nullable = false)
     private String bio;
     @Column(length = 20, nullable = false)
     private String role;

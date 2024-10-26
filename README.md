@@ -1,11 +1,5 @@
 <a id="readme-top"></a>
 
-[![Contributors][contributors-shield]][contributors-url]
-[![Forks][forks-shield]][forks-url]
-[![Stargazers][stars-shield]][stars-url]
-[![Issues][issues-shield]][issues-url]
-[![MIT License][license-shield]][license-url]
-
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
@@ -52,6 +46,9 @@
     <li>
       <a href="#frontend-repository">Frontend Repository</a>
     </li>
+    <li>
+      <a href="#top-contributors">Top contributors</a>
+    </li>
     <li><a href="#license">License</a></li>
   </ol>
 </details>
@@ -62,13 +59,13 @@
 
 - **User Registration and Login**: Users can register and log into the platform.
 - **Post Management**:
-    - Users can create new posts to share their thoughts or updates with fellow students.
-    - Users can view posts created by others, fostering social interaction.
-    - Users can delete their own posts when needed.
-    - Users can react posts.
+  - Users can create new posts to share their thoughts or updates with fellow students.
+  - Users can view posts created by others, fostering social interaction.
+  - Users can delete their own posts when needed.
+  - Users can react posts.
 - **Notifications**:
-    - Users will be notified about upcoming events relevant to their academic life.
-    - Birthday notifications to remind users of their fellow students' birthdays.
+  - Users will be notified about upcoming events relevant to their academic life.
+  - Birthday notifications to remind users of their fellow students' birthdays.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -113,7 +110,6 @@ Follow these steps to install and set up the project on your local machine:
 
    ```sh
    git clone https://github.com/SE10-IJSE/SE10-NETWORK-BACKEND.git
-
    ```
 
 2. Change git remote url to avoid accidental pushes to base project
@@ -126,7 +122,7 @@ Follow these steps to install and set up the project on your local machine:
 
 ## API Documentation
 
-Refer to the [Postman API Documentation](https://documenter.getpostman.com/view/35384124/2sA3s4nAij) for detailed API endpoints and usage instructions.
+Refer to the [Postman API Documentation](https://documenter.getpostman.com/view/39303999/2sAY4sjQPn) for detailed API endpoints and usage instructions.
 
 ## Frontend Repository
 
@@ -134,7 +130,7 @@ Access the frontend repository on GitHub [here](https://github.com/SE10-IJSE/SE1
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-### Top contributors:
+## Top contributors:
 
 <a href="https://github.com/SE10-IJSE/SE10-NETWORK-BACKEND/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=SE10-IJSE/SE10-NETWORK-BACKEND" alt="contrib.rocks image" />
@@ -155,17 +151,3 @@ Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
 <p align="center">
   &copy; 2024 SE10 NETWORK
 </p>
-
-<!-- MARKDOWN LINKS & IMAGES -->
-<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-
-[contributors-shield]: https://img.shields.io/github/contributors/SE10-IJSE/SE10-NETWORK-FRONTEND.svg?style=for-the-badge
-[contributors-url]: https://github.com/SE10-IJSE/SE10-NETWORK-FRONTEND/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/SE10-IJSE/SE10-NETWORK-FRONTEND.svg?style=for-the-badge
-[forks-url]: https://github.com/SE10-IJSE/SE10-NETWORK-FRONTEND/network/members
-[stars-shield]: https://img.shields.io/github/stars/SE10-IJSE/SE10-NETWORK-FRONTEND.svg?style=for-the-badge
-[stars-url]: https://github.com/othneildrew/Best-README-Template/stargazers
-[issues-shield]: https://img.shields.io/github/issues/SE10-IJSE/SE10-NETWORK-FRONTEND.svg?style=for-the-badge
-[issues-url]: https://github.com/SE10-IJSE/SE10-NETWORK-FRONTEND/issues
-[license-shield]: https://img.shields.io/github/license/SE10-IJSE/SE10-NETWORK-FRONTEND.svg?style=for-the-badge
-[license-url]: https://github.com/SE10-IJSE/SE10-NETWORK-FRONTEND/blob/main/LICENSE

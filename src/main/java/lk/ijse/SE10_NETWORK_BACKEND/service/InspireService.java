@@ -5,6 +5,6 @@ import org.springframework.stereotype.Service;
 
 @Service
 public interface InspireService {
-    InspireDTO saveInspiration(InspireDTO inspireDTO, String token);
-    boolean deleteInspiration(Long postId, String token);
+    void saveInspiration(InspireDTO inspireDTO, String token);
+    void deleteInspiration(Long postId, String token);
 }

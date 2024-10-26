@@ -13,14 +13,11 @@ import java.util.Optional;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
-    @Query("SELECT u FROM User u WHERE FUNCTION('MONTH', u.dob) = FUNCTION('MONTH', CURRENT_DATE) AND FUNCTION('DAY', u.dob) = FUNCTION('DAY', CURRENT_DATE)")
+    @Query("SELECT u FROM User u WHERE FUNCTION('MONTH', u.dob) = FUNCTION('MONTH', CURRENT_DATE) AND FUNCTION('DAY', u.dob) = FUNCTION('DAY', CURRENT_DATE) AND u.status <> 'Suspended'")
     Optional<List<User>> findUsersWithBirthday();
-
     @Query("SELECT u FROM User u WHERE u.status='Active' AND u.email=:email")
     Optional<User> findByEmail(@Param("email") String email);
-
-    @Query("SELECT u FROM User u WHERE u.name = :name OR u.name LIKE :name% OR u.name LIKE %:name")
+    @Query("SELECT u FROM User u WHERE (u.name = :name OR u.name LIKE :name% OR u.name LIKE %:name) AND u.status <> 'Suspended'")
     Page<User> findUsersByNameOrNameLike(@Param("name") String name, Pageable pageable);
-
     boolean existsByEmail(String userName);
 }

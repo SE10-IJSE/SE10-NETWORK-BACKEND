@@ -1,71 +1,67 @@
 package lk.ijse.SE10_NETWORK_BACKEND.controller;
 
+import jakarta.validation.Valid;
 import lk.ijse.SE10_NETWORK_BACKEND.dto.InspireDTO;
+import lk.ijse.SE10_NETWORK_BACKEND.exception.DataPersistFailedException;
+import lk.ijse.SE10_NETWORK_BACKEND.exception.InspireNotFoundException;
+import lk.ijse.SE10_NETWORK_BACKEND.exception.InvalidInspirationException;
 import lk.ijse.SE10_NETWORK_BACKEND.service.InspireService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/v1/inspire")
 @CrossOrigin("*")
+@RequiredArgsConstructor
+@Slf4j
 public class InspireController {
-
-    @Autowired
-    private InspireService inspireService;
-
-    private static final Logger logger = LoggerFactory.getLogger(InspireController.class);
-
+    private final InspireService inspireService;
     /**
-     * Saves a "like" (inspiration) for a post.
+     * Handles the request to save an inspiration (like) for a specific post.
      *
-     * @param dto   The data transfer object representing the inspiration.
-     * @param token The JWT token for find user.
-     * @return A ResponseEntity with appropriate HTTP status.
+     * @param dto   The data transfer object containing inspiration details.
+     * @param token The JWT token used to authenticate the user.
+     * @return A ResponseEntity indicating the result of the operation with status 201 (Created) on success, and 400 (Bad Request) on failure.
      */
     @PostMapping
-    public ResponseEntity<String> saveLike(
-            @RequestBody InspireDTO dto,
+    public ResponseEntity<String> saveInspire(
+            @Valid @RequestBody InspireDTO dto,
             @RequestHeader("Authorization") String token) {
-
-        logger.info("Attempting to save inspiration for post: {}", dto.getPostId());
-
-        InspireDTO inspireDTO = inspireService.saveInspiration(dto, token);
-
-        if (inspireDTO != null) {
-            logger.info("Inspiration saved successfully for post: {}", dto.getPostId());
+        try {
+            log.info("Saving inspiration for post with ID: {}", dto.getPostId());
+            inspireService.saveInspiration(dto, token);
+            log.info("Inspiration saved successfully for post ID: {}", dto.getPostId());
             return ResponseEntity.status(HttpStatus.CREATED).build();
-        } else {
-            logger.warn("Failed to save inspiration for post: {}", dto.getPostId());
+        } catch (InvalidInspirationException e) {
+            log.warn("Invalid inspiration attempt. Post or user not found for post ID: {}", dto.getPostId());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        } catch (DataPersistFailedException e) {
+            log.error("Data persistence failed while saving inspiration for post ID: {}", dto.getPostId());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
     }
-
     /**
-     * Deletes a "like" (inspiration) for a post.
+     * Handles the request to delete an inspiration (like) from a specific post.
      *
-     * @param postId The ID of the post to delete the inspiration from.
-     * @param token  The JWT token for find user.
-     * @return A ResponseEntity with appropriate HTTP status.
+     * @param postId The ID of the post to remove the inspiration from.
+     * @param token  The JWT token used to authenticate the user.
+     * @return A ResponseEntity indicating the result of the operation with status 204 (No Content) on success, and 404 (Not Found) if the inspiration is not found.
      */
-    @DeleteMapping("/{postId}")
-    public ResponseEntity<Void> deleteLike(
+    @DeleteMapping("/post/{postId}")
+    public ResponseEntity<Void> deleteInspire(
             @PathVariable("postId") Long postId,
             @RequestHeader("Authorization") String token) {
-
-        logger.info("Attempting to delete inspiration for post: {}", postId);
-
-        boolean deleted = inspireService.deleteInspiration(postId, token);
-
-        if (deleted) {
-            logger.info("Inspiration deleted successfully for post: {}", postId);
+        try {
+            log.info("Deleting inspiration for post with ID: {}", postId);
+            inspireService.deleteInspiration(postId, token);
+            log.info("Inspiration deleted successfully for post ID: {}", postId);
             return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
-        } else {
-            logger.warn("Failed to delete inspiration for post: {}", postId);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        } catch (InspireNotFoundException e) {
+            log.warn("No inspiration found to delete for post ID: {}", postId);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
     }
 }
