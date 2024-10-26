@@ -11,16 +11,13 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 @SpringBootApplication
 @CrossOrigin("*")
 public class AppInit {
-
 	public static void main(String[] args) {
 		SpringApplication.run(AppInit.class, args);
 	}
-
 	@Bean
 	public ModelMapper modelMapper() {
 		return new ModelMapper();
 	}
-
 	@Bean
 	public PasswordEncoder passwordEncoder(){
 		return new BCryptPasswordEncoder();

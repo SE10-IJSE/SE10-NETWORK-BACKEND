@@ -18,19 +18,14 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableMethodSecurity(prePostEnabled = true)
 public class WebSecurityConfig {
-
     @Autowired
     private UserDetailsService userDetailsService;
-
     @Autowired
     private JwtFilter jwtFilter;
-
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
-
     }
-
     @Bean
     protected SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http
@@ -40,7 +35,6 @@ public class WebSecurityConfig {
                                 "/api/v1/auth/sign_in",
                                 "/api/v1/auth/sign_up",
                                 "/api/v1/auth/request_otp",
-                                "/api/v1/auth/verify_otp",
                                 "/api/v1/auth/update_password").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -48,4 +42,3 @@ public class WebSecurityConfig {
                 .build();
     }
 }
-

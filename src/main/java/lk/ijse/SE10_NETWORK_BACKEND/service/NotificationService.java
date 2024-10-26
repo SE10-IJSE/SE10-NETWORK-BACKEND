@@ -7,6 +7,6 @@ import java.util.List;
 
 @Service
 public interface NotificationService {
-    NotificationDTO saveNotification(NotificationDTO dto);
-    List<NotificationDTO> getNotificationsByStudentId(Long userId, Integer pageNo, Integer notificationCount);
+    void saveNotification(String content, String token);
+    List<NotificationDTO> getNotificationsByStudentId(Long userId, Integer pageNo, Integer notificationCount, String token);
 }

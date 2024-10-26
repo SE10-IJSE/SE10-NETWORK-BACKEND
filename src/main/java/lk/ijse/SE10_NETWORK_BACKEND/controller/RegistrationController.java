@@ -1,6 +1,7 @@
 package lk.ijse.SE10_NETWORK_BACKEND.controller;
 
 import jakarta.mail.MessagingException;
+import jakarta.validation.Valid;
 import lk.ijse.SE10_NETWORK_BACKEND.customObj.OtpResponse;
 import lk.ijse.SE10_NETWORK_BACKEND.dto.*;
 import lk.ijse.SE10_NETWORK_BACKEND.exception.DataPersistFailedException;
@@ -13,9 +14,6 @@ import lk.ijse.SE10_NETWORK_BACKEND.util.VarList;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -38,10 +36,10 @@ public class RegistrationController {
      * Handles user sign-in requests.
      *
      * @param dto SignInDTO containing the email and password for authentication.
-     * @return ResponseEntity with a ResponseDTO indicating the result of the sign-in attempt.
+     * @return ResponseEntity with status 200 (OK) and an AuthDTO on success, 401 (Unauthorized) on invalid credentials, and 404 (Not Found) if the user is not found.
      */
     @PostMapping("/sign_in")
-    public ResponseEntity<ResponseDTO> signIn(@RequestBody SignInDTO dto) {
+    public ResponseEntity<ResponseDTO> signIn(@Valid @RequestBody SignInDTO dto) {
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(dto.getEmail(), dto.getPassword()));
@@ -54,13 +52,13 @@ public class RegistrationController {
         if (loadedUser == null) {
             log.warn("User not found for email: {}", dto.getEmail());
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(new ResponseDTO(VarList.Conflict, "User not found", null));
+                    .body(new ResponseDTO(VarList.Not_Found, "User not found", null));
         }
         String token = jwtUtil.generateToken(loadedUser);
         if (token == null || token.isEmpty()) {
             log.warn("Failed to generate token for email: {}", dto.getEmail());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ResponseDTO(VarList.Conflict, "Token generation failed", null));
+                    .body(new ResponseDTO(VarList.Internal_Server_Error, "Token generation failed", null));
         }
         AuthDTO authDTO = new AuthDTO();
         authDTO.setEmail(loadedUser.getEmail());
@@ -72,10 +70,10 @@ public class RegistrationController {
      * Handles user sign-up requests.
      *
      * @param userDTO UserDTO containing the user details for registration.
-     * @return ResponseEntity with a ResponseDTO indicating the result of the sign-up attempt.
+     * @return ResponseEntity with status 201 (Created) and an AuthDTO on success, 400 (Bad Request) on invalid OTP, 409 (Conflict) on email mismatch, and 500 (Internal Server Error) on data persistence failure.
      */
     @PostMapping("/sign_up")
-    public ResponseEntity<ResponseDTO> signUp(@ModelAttribute SignUpDTO userDTO) {
+    public ResponseEntity<ResponseDTO> signUp(@Valid @ModelAttribute SignUpDTO userDTO) {
         try {
             userService.saveUser(userDTO);
             String token = jwtUtil.generateToken(modelMapper.map(userDTO, UserDTO.class));
@@ -104,10 +102,10 @@ public class RegistrationController {
      * This method verifies the provided OTP and updates the user's password if the OTP is valid.
      *
      * @param dto UpdatePasswordDTO containing the email, OTP, and new password.
-     * @return ResponseEntity indicating the success or failure of the password update attempt.
+     * @return ResponseEntity with status 204 (No Content) on success, 400 (Bad Request) on invalid OTP, and 404 (Not Found) if the user is not found.
      */
     @PutMapping("/update_password")
-    public ResponseEntity<Void> updatePassword(@RequestBody UpdatePasswordDTO dto) {
+    public ResponseEntity<Void> updatePassword(@Valid @RequestBody UpdatePasswordDTO dto) {
         try {
             log.info("Starting password update for email: {}", dto.getEmail());
             userService.updatePassword(dto);
@@ -129,7 +127,7 @@ public class RegistrationController {
      *
      * @param name  The name of the user whose email is to be verified.
      * @param email The email address to be verified.
-     * @return ResponseEntity with an OtpResponse indicating the result of the email verification attempt.
+     * @return ResponseEntity with status 200 (OK) on success, 404 (Not Found) if the user is not found, and 500 (Internal Server Error) on messaging or IO exceptions.
      */
     @PostMapping("/request_otp")
     public ResponseEntity<OtpResponse> requestOtp(

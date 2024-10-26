@@ -10,6 +10,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
-    @Query("select n from Notification n WHERE n.user.userId=:userId")
+    @Query("SELECT n FROM Notification n WHERE n.user.userId = :userId OR n.type = 'System'")
     Page<Notification> findByStudentId(@Param("userId") Long studentId, Pageable pageable);
 }
