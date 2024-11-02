@@ -12,14 +12,17 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-public class NotificationDTO implements Serializable {
-    private Long notificationId;
-    @NotBlank(message = "Content cannot be empty")
-    @Size(max = 100, message = "Content cannot exceed 100 characters")
-    private String content;
-    @Size(max = 30, message = "Type cannot exceed 30 characters")
-    private String type;
-    private LocalDateTime createdAt;
-    private Long userId;
+public class PostDTO implements Serializable {
     private Long postId;
+    @NotBlank(message = "Content cannot be empty")
+    @Size(max = 280, message = "Content cannot exceed 280 characters")
+    private String content;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+    private String verifiedBy;
+    private String userName;
+    private String profileImg;
+    private int inspirationCount;
+    private boolean inspired;
+    private String status;
 }

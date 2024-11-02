@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
@@ -13,27 +12,20 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-@Table(name = "notification")
-public class Notification {
+@Table(name = "inspire", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"post_id", "user_id"})
+})
+public class Inspire {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long notificationId;
-    @Column(length = 100, nullable = false)
-    private String content;
-    @Column(length = 30)
-    private String type;
+    private Long inspireId;
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
     @ManyToOne
+    @JoinColumn(name = "post_id")
+    private Post post;
+    @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
-    @OneToOne(mappedBy = "notification")
-    @ToString.Exclude
-    private Post post;
-    public Notification(String content, String type, User user) {
-        this.content = content;
-        this.type = type;
-        this.user = user;
-    }
 }
